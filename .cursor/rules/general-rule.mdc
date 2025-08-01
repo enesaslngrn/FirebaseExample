@@ -1,0 +1,104 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+You are an expert in Kotlin, Android development, and XML. You use Clean Architecture with Hilt for dependency injection, Room for local persistence, and Navigation Component for screen transitions. You prioritize maintainable architecture, readable code, and idiomatic practices.
+
+### General Principles
+- Use XML for all UI elements.
+- Structure the project using Clean Architecture: Domain, Data, and Presentation layers.
+- Follow the MVVM pattern with unidirectional data flow in the presentation layer.
+- Use Firebase Authentication, Cloud Firestore, and Firebase Storage and Remote Config as backend services.
+- Use Hilt for dependency injection across all layers.
+- Use Room for persistence; define entities, DAOs, and the database in the Data layer.
+- Use Navigation Component for screen navigation.
+- Write maintainable, scalable, and readable code.
+- Follow Kotlin idioms and best practices consistently.
+- Follow Material Design 3 guidelines and components.
+- Use Kotlin coroutines and Flow for asynchronous operations.
+- Follow unidirectional data flow with ViewModel and UI State.
+- Prefer sealed classes or enums for UI events.
+
+### Folder Structure
+app/
+  src/
+    main/
+      java/com/package/
+        data/
+          repository/
+          datasource/
+          models/
+        domain/
+          usecases/
+          models/
+          repository/
+        presentation/
+          components/
+          views/
+          viewmodels/
+        di/
+        utils/
+
+
+### XML Guidelines
+- Use English for all ids, attributes, and comments.
+- Keep layouts declarative, readable, and consistent.
+- Do not use hardcoded strings, dimensions, or colors — always use resources:
+ - @string/..., @dimen/..., @color/...
+- Avoid over-nesting.
+- Use ConstraintLayout for most layouts. Only use LinearLayout or FrameLayout when layout is trivial.
+- Attribute order should follow this standard:
+    id
+    layout_width
+    layout_height
+    layout_constraint*
+    padding / margin
+    background
+    text / src / image-related
+    other attributes
+    tools attributes
+- Use snake_case for XML filenames.
+- Use camelCase for all @+id/... declarations.
+- Name should reflect purpose and type, not implementation.
+- Always use Material3 components.
+- Never use absolute pixels (px). Use only dp for layout and sp for text.
+
+### ViewModel & State Management
+- Inject ViewModels using Hilt.
+- Keep UI state in immutable data classes.
+- Use `StateFlow` or `LiveData` to expose state to the UI layer.
+- Use sealed classes for UI events and side effects (e.g., navigation, showing a Toast).
+- Keep the ViewModel lean—delegate business logic to use cases in the domain layer.
+- Avoid exposing mutable state directly.
+
+### Data Layer
+- Define Room entities, DAOs, and database configuration.
+- Repositories should expose domain models, not Room entities.
+- Use DTOs to map data between layers (Data ↔ Domain).
+- Handle errors explicitly—wrap results in `Result`, `sealed class`, or `Either`.
+
+### Domain Layer
+- Pure Kotlin layer: no Android or framework dependencies.
+- Define interfaces for repositories and implement them in the Data layer.
+- Place business logic and use cases here.
+- Keep it highly testable and framework-agnostic.
+
+### Dependency Injection (Hilt)
+- Annotate Application class with `@HiltAndroidApp`.
+- Use constructor injection (`@Inject`) in ViewModels, use cases, and repositories.
+- Define Hilt modules for providing Room, Network, and other dependencies.
+- Use appropriate scopes: `@Singleton`, `@ViewModelScoped`, etc.
+- Annotate modules with `@InstallIn(SingletonComponent::class)` or relevant scope.
+
+### Logging & Debugging
+- Use **Timber** for logging—avoid `println()` or `Log`.
+- Never log sensitive information.
+- Enable debug tools like Layout Inspector and Compose Preview during development.
+
+### Final Notes
+- Keep your code idiomatic and clean.
+- Review and refactor regularly.
+- Prefer clarity over cleverness.
+- Stay consistent.
+

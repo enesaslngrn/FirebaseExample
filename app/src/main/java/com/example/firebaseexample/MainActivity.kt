@@ -2,19 +2,56 @@ package com.example.firebaseexample
 
 import android.os.Bundle
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
-import androidx.core.view.ViewCompat
-import androidx.core.view.WindowInsetsCompat
+import androidx.lifecycle.lifecycleScope
+import com.example.firebaseexample.presentation.auth.AuthState
+import com.example.firebaseexample.presentation.auth.AuthViewModel
+import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.launch
+import timber.log.Timber
 
+@AndroidEntryPoint
 class MainActivity : AppCompatActivity() {
+    
+    private val authViewModel: AuthViewModel by viewModels()
+    
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContentView(R.layout.activity_main)
-        ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main)) { v, insets ->
-            val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
-            v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom)
-            insets
+        
+        observeAuthState()
+    }
+    
+    private fun observeAuthState() {
+        lifecycleScope.launch {
+            authViewModel.state.collectLatest { state ->
+                handleAuthState(state)
+            }
         }
+    }
+    
+    private fun handleAuthState(state: AuthState) {
+        if (state.isAuthenticated) {
+            Timber.d("User is authenticated, showing home fragment")
+            showHomeFragment()
+        } else {
+            Timber.d("User is not authenticated, showing auth fragment")
+            showAuthFragment()
+        }
+    }
+    
+    private fun showHomeFragment() {
+        supportFragmentManager.beginTransaction()
+            .replace(R.id.fragmentContainer, com.example.firebaseexample.presentation.home.HomeFragment())
+            .commit()
+    }
+    
+    private fun showAuthFragment() {
+        supportFragmentManager.beginTransaction()
+            .replace(R.id.fragmentContainer, com.example.firebaseexample.presentation.auth.AuthFragment())
+            .commit()
     }
 }
