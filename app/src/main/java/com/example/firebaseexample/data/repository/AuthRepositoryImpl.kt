@@ -91,6 +91,27 @@ class AuthRepositoryImpl @Inject constructor(
         }
     }
 
+    override fun sendEmailVerification(): Flow<AuthResult> = flow {
+        emit(AuthResult.Loading)
+        val user = firebaseAuth.currentUser
+        if (user != null) {
+            try {
+                user.sendEmailVerification().await()
+                emit(AuthResult.Success(user.toUserDto().toDomain()))
+            } catch (e: Exception) {
+                emit(AuthResult.Error(e.message ?: "Failed to send verification email"))
+            }
+        } else {
+            emit(AuthResult.Error("No user logged in"))
+        }
+    }
+
+    override fun isEmailVerified(): Flow<Boolean> = flow {
+        val user = firebaseAuth.currentUser
+        user?.reload()?.await()
+        emit(user?.isEmailVerified == true)
+    }
+
     private fun FirebaseUser.toUserDto(): UserDto {
         return UserDto(
             id = uid,

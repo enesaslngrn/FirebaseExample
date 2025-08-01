@@ -15,6 +15,7 @@ import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import timber.log.Timber
+import com.google.android.material.snackbar.Snackbar
 
 @AndroidEntryPoint
 class HomeFragment : Fragment() {
@@ -43,6 +44,9 @@ class HomeFragment : Fragment() {
         binding.signOutButton.setOnClickListener {
             authViewModel.onEvent(AuthEvent.SignOut)
         }
+        binding.sendVerificationButton.setOnClickListener {
+            authViewModel.onEvent(AuthEvent.SendEmailVerification)
+        }
     }
 
     private fun observeAuthState() {
@@ -57,8 +61,17 @@ class HomeFragment : Fragment() {
         state.user?.let { user ->
             binding.userEmailTextView.text = user.email
             binding.userIdTextView.text = getString(R.string.user_id, user.id)
-            
             Timber.d("User info displayed: ${user.email}")
+        }
+        if (!state.isEmailVerified && state.user != null) {
+            binding.sendVerificationButton.visibility = View.VISIBLE
+            binding.sendVerificationButton.isEnabled = !state.isLoading
+        } else {
+            binding.sendVerificationButton.visibility = View.GONE
+        }
+        state.verificationMessage?.let {
+            Snackbar.make(binding.root, getString(R.string.verification_email_sent), Snackbar.LENGTH_LONG).show()
+            authViewModel.onEvent(AuthEvent.ClearSuccessMessage)
         }
     }
 

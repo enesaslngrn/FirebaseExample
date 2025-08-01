@@ -9,6 +9,8 @@ import com.example.firebaseexample.domain.usecases.SignInUseCase
 import com.example.firebaseexample.domain.usecases.SignOutUseCase
 import com.example.firebaseexample.domain.usecases.SignUpUseCase
 import com.example.firebaseexample.domain.usecases.SignInWithGoogleUseCase
+import com.example.firebaseexample.domain.usecases.SendEmailVerificationUseCase
+import com.example.firebaseexample.domain.usecases.IsEmailVerifiedUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -25,7 +27,9 @@ class AuthViewModel @Inject constructor(
     private val signOutUseCase: SignOutUseCase,
     private val getCurrentUserUseCase: GetCurrentUserUseCase,
     private val sendPasswordResetUseCase: SendPasswordResetUseCase,
-    private val signInWithGoogleUseCase: SignInWithGoogleUseCase
+    private val signInWithGoogleUseCase: SignInWithGoogleUseCase,
+    private val sendEmailVerificationUseCase: SendEmailVerificationUseCase,
+    private val isEmailVerifiedUseCase: IsEmailVerifiedUseCase
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(AuthState())
@@ -51,6 +55,12 @@ class AuthViewModel @Inject constructor(
             }
             is AuthEvent.SignInWithGoogle -> {
                 signInWithGoogle(event.idToken)
+            }
+            is AuthEvent.SendEmailVerification -> {
+                sendEmailVerification()
+            }
+            is AuthEvent.CheckEmailVerified -> {
+                checkEmailVerified()
             }
             is AuthEvent.ClearError -> {
                 _state.update { it.copy(error = null) }
@@ -236,6 +246,26 @@ class AuthViewModel @Inject constructor(
                         Timber.e("Google sign in error: ${result.message}")
                     }
                 }
+            }
+        }
+    }
+
+    private fun sendEmailVerification() {
+        viewModelScope.launch {
+            sendEmailVerificationUseCase().collect { result ->
+                when (result) {
+                    is AuthResult.Loading -> _state.update { it.copy(isLoading = true) }
+                    is AuthResult.Success -> _state.update { it.copy(isLoading = false, verificationMessage = "Verification email sent") }
+                    is AuthResult.Error -> _state.update { it.copy(isLoading = false, error = result.message) }
+                }
+            }
+        }
+    }
+
+    private fun checkEmailVerified() {
+        viewModelScope.launch {
+            isEmailVerifiedUseCase().collect { verified ->
+                _state.update { it.copy(isEmailVerified = verified) }
             }
         }
     }
