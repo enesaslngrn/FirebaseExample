@@ -56,6 +56,14 @@ class AuthFragment : Fragment() {
                 viewModel.onEvent(AuthEvent.SignUp(email, password))
             }
         }
+
+        binding.forgotPasswordButton.setOnClickListener {
+            val email = binding.emailEditText.text.toString()
+            
+            if (validateEmail(email)) {
+                viewModel.onEvent(AuthEvent.SendPasswordReset(email))
+            }
+        }
     }
 
     private fun validateInput(email: String, password: String): Boolean {
@@ -82,6 +90,20 @@ class AuthFragment : Fragment() {
         return true
     }
 
+    private fun validateEmail(email: String): Boolean {
+        if (email.isEmpty()) {
+            showError(getString(R.string.please_enter_email))
+            return false
+        }
+        
+        if (!android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
+            showError(getString(R.string.invalid_email))
+            return false
+        }
+        
+        return true
+    }
+
     private fun observeState() {
         viewLifecycleOwner.lifecycleScope.launch {
             viewModel.state.collectLatest { state ->
@@ -95,12 +117,18 @@ class AuthFragment : Fragment() {
         
         binding.signInButton.isEnabled = !state.isLoading
         binding.signUpButton.isEnabled = !state.isLoading
+        binding.forgotPasswordButton.isEnabled = !state.isLoading
         binding.emailEditText.isEnabled = !state.isLoading
         binding.passwordEditText.isEnabled = !state.isLoading
 
         state.error?.let { error ->
             showError(error)
             viewModel.onEvent(AuthEvent.ClearError)
+        }
+
+        state.successMessage?.let { message ->
+            showSuccess(message)
+            viewModel.onEvent(AuthEvent.ClearSuccessMessage)
         }
 
         if (state.isAuthenticated) {
@@ -110,6 +138,10 @@ class AuthFragment : Fragment() {
     }
 
     private fun showError(message: String) {
+        Snackbar.make(binding.root, message, Snackbar.LENGTH_LONG).show()
+    }
+
+    private fun showSuccess(message: String) {
         Snackbar.make(binding.root, message, Snackbar.LENGTH_LONG).show()
     }
 

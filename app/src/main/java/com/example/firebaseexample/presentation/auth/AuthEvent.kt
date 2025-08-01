@@ -6,4 +6,5 @@ sealed class AuthEvent {
     object SignOut : AuthEvent()
     data class SendPasswordReset(val email: String) : AuthEvent()
     object ClearError : AuthEvent()
+    object ClearSuccessMessage : AuthEvent()
 } 

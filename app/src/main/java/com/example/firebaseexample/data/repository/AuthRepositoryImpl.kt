@@ -3,6 +3,7 @@ package com.example.firebaseexample.data.repository
 import com.example.firebaseexample.domain.models.AuthResult
 import com.example.firebaseexample.domain.models.User
 import com.example.firebaseexample.domain.repository.AuthRepository
+import com.example.firebaseexample.data.models.UserDto
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
 import kotlinx.coroutines.channels.awaitClose
@@ -19,7 +20,7 @@ class AuthRepositoryImpl @Inject constructor(
 
     override fun getCurrentUser(): Flow<User?> = callbackFlow {
         val listener = FirebaseAuth.AuthStateListener { auth ->
-            val user = auth.currentUser?.toDomain()
+            val user = auth.currentUser?.toUserDto()?.toDomain()
             trySend(user)
         }
         
@@ -32,7 +33,7 @@ class AuthRepositoryImpl @Inject constructor(
         try {
             val result = firebaseAuth.signInWithEmailAndPassword(email, password).await()
             result.user?.let { user ->
-                emit(AuthResult.Success(user.toDomain()))
+                emit(AuthResult.Success(user.toUserDto().toDomain()))
             } ?: emit(AuthResult.Error("Sign in failed"))
         } catch (e: Exception) {
             Timber.e(e, "Sign in error")
@@ -45,7 +46,7 @@ class AuthRepositoryImpl @Inject constructor(
         try {
             val result = firebaseAuth.createUserWithEmailAndPassword(email, password).await()
             result.user?.let { user ->
-                emit(AuthResult.Success(user.toDomain()))
+                emit(AuthResult.Success(user.toUserDto().toDomain()))
             } ?: emit(AuthResult.Error("Sign up failed"))
         } catch (e: Exception) {
             Timber.e(e, "Sign up error")
@@ -75,8 +76,8 @@ class AuthRepositoryImpl @Inject constructor(
         }
     }
 
-    private fun FirebaseUser.toDomain(): User {
-        return User(
+    private fun FirebaseUser.toUserDto(): UserDto {
+        return UserDto(
             id = uid,
             email = email ?: "",
             displayName = displayName,

@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.firebaseexample.domain.models.AuthResult
 import com.example.firebaseexample.domain.usecases.GetCurrentUserUseCase
+import com.example.firebaseexample.domain.usecases.SendPasswordResetUseCase
 import com.example.firebaseexample.domain.usecases.SignInUseCase
 import com.example.firebaseexample.domain.usecases.SignOutUseCase
 import com.example.firebaseexample.domain.usecases.SignUpUseCase
@@ -21,7 +22,8 @@ class AuthViewModel @Inject constructor(
     private val signInUseCase: SignInUseCase,
     private val signUpUseCase: SignUpUseCase,
     private val signOutUseCase: SignOutUseCase,
-    private val getCurrentUserUseCase: GetCurrentUserUseCase
+    private val getCurrentUserUseCase: GetCurrentUserUseCase,
+    private val sendPasswordResetUseCase: SendPasswordResetUseCase
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(AuthState())
@@ -43,10 +45,13 @@ class AuthViewModel @Inject constructor(
                 signOut()
             }
             is AuthEvent.SendPasswordReset -> {
-                // TODO: Implement password reset
+                sendPasswordReset(event.email)
             }
             is AuthEvent.ClearError -> {
                 _state.update { it.copy(error = null) }
+            }
+            is AuthEvent.ClearSuccessMessage -> {
+                _state.update { it.copy(successMessage = null) }
             }
         }
     }
@@ -157,6 +162,39 @@ class AuthViewModel @Inject constructor(
                             )
                         }
                         Timber.e("Sign out error: ${result.message}")
+                    }
+                }
+            }
+        }
+    }
+
+    private fun sendPasswordReset(email: String) {
+        viewModelScope.launch {
+            _state.update { it.copy(isLoading = true, error = null, successMessage = null) }
+            
+            sendPasswordResetUseCase(email).collect { result ->
+                when (result) {
+                    is AuthResult.Loading -> {
+                        _state.update { it.copy(isLoading = true) }
+                    }
+                    is AuthResult.Success -> {
+                        _state.update { 
+                            it.copy(
+                                isLoading = false,
+                                error = null,
+                                successMessage = "Password reset email sent successfully"
+                            )
+                        }
+                        Timber.d("Password reset email sent successfully")
+                    }
+                    is AuthResult.Error -> {
+                        _state.update { 
+                            it.copy(
+                                isLoading = false,
+                                error = result.message
+                            )
+                        }
+                        Timber.e("Password reset error: ${result.message}")
                     }
                 }
             }
