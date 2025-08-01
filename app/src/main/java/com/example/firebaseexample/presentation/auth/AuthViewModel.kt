@@ -71,10 +71,11 @@ class AuthViewModel @Inject constructor(
     private fun observeCurrentUser() {
         viewModelScope.launch {
             getCurrentUserUseCase().collect { user ->
-                _state.update { 
+                _state.update {
                     it.copy(
                         user = user,
-                        isAuthenticated = user != null
+                        isAuthenticated = user != null,
+                        isInitialized = true
                     )
                 }
             }

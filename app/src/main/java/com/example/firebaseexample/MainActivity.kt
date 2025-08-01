@@ -23,7 +23,6 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContentView(R.layout.activity_main)
-        
         observeAuthState()
     }
     
@@ -36,6 +35,9 @@ class MainActivity : AppCompatActivity() {
     }
     
     private fun handleAuthState(state: AuthState) {
+        if (!state.isInitialized) {
+            return
+        }
         if (state.isAuthenticated) {
             Timber.d("User is authenticated, showing home fragment")
             showHomeFragment()
