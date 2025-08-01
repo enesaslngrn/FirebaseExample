@@ -8,6 +8,6 @@ data class AuthState(
     val error: String? = null,
     val successMessage: String? = null,
     val isAuthenticated: Boolean = false,
-    val isEmailVerified: Boolean = false,
+    val isEmailVerified: Boolean? = null,
     val verificationMessage: String? = null
 ) 

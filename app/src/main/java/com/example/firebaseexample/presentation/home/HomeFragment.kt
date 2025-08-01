@@ -4,12 +4,14 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import androidx.core.view.isVisible
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
 import com.example.firebaseexample.R
 import com.example.firebaseexample.databinding.FragmentHomeBinding
 import com.example.firebaseexample.presentation.auth.AuthEvent
+import com.example.firebaseexample.presentation.auth.AuthState
 import com.example.firebaseexample.presentation.auth.AuthViewModel
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.flow.collectLatest
@@ -38,6 +40,7 @@ class HomeFragment : Fragment() {
         super.onViewCreated(view, savedInstanceState)
         setupUI()
         observeAuthState()
+        authViewModel.checkEmailVerified()
     }
 
     private fun setupUI() {
@@ -57,17 +60,18 @@ class HomeFragment : Fragment() {
         }
     }
 
-    private fun updateUI(state: com.example.firebaseexample.presentation.auth.AuthState) {
+    private fun updateUI(state: AuthState) {
+        binding.progressIndicator.visibility = if (state.isLoading) View.VISIBLE else View.GONE
         state.user?.let { user ->
             binding.userEmailTextView.text = user.email
             binding.userIdTextView.text = getString(R.string.user_id, user.id)
             Timber.d("User info displayed: ${user.email}")
         }
-        if (!state.isEmailVerified && state.user != null) {
-            binding.sendVerificationButton.visibility = View.VISIBLE
-            binding.sendVerificationButton.isEnabled = !state.isLoading
-        } else {
-            binding.sendVerificationButton.visibility = View.GONE
+        if (state.user != null) {
+            state.isEmailVerified?.let { isEmailVerified ->
+                binding.sendVerificationButton.isVisible = !isEmailVerified
+                binding.verifiedTextView.isVisible = isEmailVerified
+            }
         }
         state.verificationMessage?.let {
             Snackbar.make(binding.root, getString(R.string.verification_email_sent), Snackbar.LENGTH_LONG).show()

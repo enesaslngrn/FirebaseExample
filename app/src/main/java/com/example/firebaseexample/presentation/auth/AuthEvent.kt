@@ -7,7 +7,6 @@ sealed class AuthEvent {
     data class SendPasswordReset(val email: String) : AuthEvent()
     data class SignInWithGoogle(val idToken: String) : AuthEvent()
     data object SendEmailVerification : AuthEvent()
-    data object CheckEmailVerified : AuthEvent()
     data object ClearError : AuthEvent()
     data object ClearSuccessMessage : AuthEvent()
 } 

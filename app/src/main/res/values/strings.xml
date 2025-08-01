@@ -22,4 +22,6 @@
     <string name="email_verification_required">Please verify your email address to continue.</string>
     <string name="send_verification_email">Send Verification Email</string>
     <string name="verification_email_sent">Verification email sent. Please check your inbox.</string>
+    <string name="email_verified">Your email is verified.</string>
+    <string name="check_verification">Check Verification</string>
 </resources>

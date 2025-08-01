@@ -59,9 +59,6 @@ class AuthViewModel @Inject constructor(
             is AuthEvent.SendEmailVerification -> {
                 sendEmailVerification()
             }
-            is AuthEvent.CheckEmailVerified -> {
-                checkEmailVerified()
-            }
             is AuthEvent.ClearError -> {
                 _state.update { it.copy(error = null) }
             }
@@ -262,7 +259,7 @@ class AuthViewModel @Inject constructor(
         }
     }
 
-    private fun checkEmailVerified() {
+    fun checkEmailVerified() {
         viewModelScope.launch {
             isEmailVerifiedUseCase().collect { verified ->
                 _state.update { it.copy(isEmailVerified = verified) }
