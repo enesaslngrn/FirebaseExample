@@ -15,4 +15,8 @@
     <string name="forgot_password">Forgot Password?</string>
     <string name="password_reset_sent">Password reset email sent</string>
     <string name="password_reset_error">Failed to send password reset email</string>
+    <string name="or">OR</string>
+    <string name="sign_in_with_google">Sign in with Google</string>
+    <string name="google_sign_in_failed">Google sign in failed</string>
+    <string name="default_web_client_id">784383750726-0clm9is257pge54ei7ub5jjpc7irj0gu.apps.googleusercontent.com</string>
 </resources>

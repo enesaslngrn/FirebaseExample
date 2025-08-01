@@ -4,6 +4,7 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import androidx.credentials.Credential
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
@@ -14,6 +15,12 @@ import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import timber.log.Timber
+import androidx.credentials.CredentialManager
+import androidx.credentials.GetCredentialRequest
+import androidx.credentials.exceptions.GetCredentialException
+import androidx.credentials.CustomCredential
+import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
+import com.google.android.libraries.identity.googleid.GetGoogleIdOption
 
 @AndroidEntryPoint
 class AuthFragment : Fragment() {
@@ -22,6 +29,7 @@ class AuthFragment : Fragment() {
     private val binding get() = _binding!!
 
     private val viewModel: AuthViewModel by viewModels()
+    private lateinit var credentialManager: CredentialManager
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -34,8 +42,13 @@ class AuthFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+        setupCredentialManager()
         setupUI()
         observeState()
+    }
+
+    private fun setupCredentialManager() {
+        credentialManager = CredentialManager.create(requireContext())
     }
 
     private fun setupUI() {
@@ -63,6 +76,49 @@ class AuthFragment : Fragment() {
             if (validateEmail(email)) {
                 viewModel.onEvent(AuthEvent.SendPasswordReset(email))
             }
+        }
+
+        binding.googleSignInButton.setOnClickListener {
+            launchGoogleSignIn()
+        }
+    }
+
+    private fun launchGoogleSignIn() {
+        viewLifecycleOwner.lifecycleScope.launch {
+            try {
+                val googleIdOption = GetGoogleIdOption.Builder()
+                    .setServerClientId(getString(R.string.default_web_client_id))
+                    .setFilterByAuthorizedAccounts(false) // “Sadece daha önce bu uygulamaya giriş yapmış kullanıcıların Google hesaplarını göster.”
+                    .setAutoSelectEnabled(true)
+                    .build()
+
+                val request = GetCredentialRequest.Builder()
+                    .addCredentialOption(googleIdOption)
+                    .build()
+
+                val credentialResponse = credentialManager.getCredential(
+                    context = requireContext(),
+                    request = request
+                )
+                handleSignIn(credentialResponse.credential)
+
+            } catch (e: GetCredentialException) {
+                Timber.e(e, "GetCredentialException")
+                showError(getString(R.string.google_sign_in_failed))
+            } catch (e: Exception) {
+                Timber.e(e, "Failed to launch Google sign in")
+                showError(getString(R.string.google_sign_in_failed))
+            }
+        }
+    }
+
+    private fun handleSignIn(credential: Credential) {
+        if (credential is CustomCredential && credential.type == GoogleIdTokenCredential.TYPE_GOOGLE_ID_TOKEN_CREDENTIAL) {
+            val googleIdTokenCredential = GoogleIdTokenCredential.createFrom(credential.data)
+            viewModel.onEvent(AuthEvent.SignInWithGoogle(googleIdTokenCredential.idToken))
+        } else {
+            Timber.w("Credential is not of type Google ID!")
+            showError(getString(R.string.google_sign_in_failed))
         }
     }
 
@@ -118,6 +174,7 @@ class AuthFragment : Fragment() {
         binding.signInButton.isEnabled = !state.isLoading
         binding.signUpButton.isEnabled = !state.isLoading
         binding.forgotPasswordButton.isEnabled = !state.isLoading
+        binding.googleSignInButton.isEnabled = !state.isLoading
         binding.emailEditText.isEnabled = !state.isLoading
         binding.passwordEditText.isEnabled = !state.isLoading
 

@@ -5,8 +5,10 @@ import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
+import com.example.firebaseexample.presentation.auth.AuthFragment
 import com.example.firebaseexample.presentation.auth.AuthState
 import com.example.firebaseexample.presentation.auth.AuthViewModel
+import com.example.firebaseexample.presentation.home.HomeFragment
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
@@ -45,13 +47,13 @@ class MainActivity : AppCompatActivity() {
     
     private fun showHomeFragment() {
         supportFragmentManager.beginTransaction()
-            .replace(R.id.fragmentContainer, com.example.firebaseexample.presentation.home.HomeFragment())
+            .replace(R.id.fragmentContainer, HomeFragment())
             .commit()
     }
     
     private fun showAuthFragment() {
         supportFragmentManager.beginTransaction()
-            .replace(R.id.fragmentContainer, com.example.firebaseexample.presentation.auth.AuthFragment())
+            .replace(R.id.fragmentContainer, AuthFragment())
             .commit()
     }
 }

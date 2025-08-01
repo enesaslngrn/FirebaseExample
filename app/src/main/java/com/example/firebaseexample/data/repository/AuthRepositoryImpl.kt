@@ -6,6 +6,7 @@ import com.example.firebaseexample.domain.repository.AuthRepository
 import com.example.firebaseexample.data.models.UserDto
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
+import com.google.firebase.auth.GoogleAuthProvider
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
@@ -73,6 +74,20 @@ class AuthRepositoryImpl @Inject constructor(
         } catch (e: Exception) {
             Timber.e(e, "Password reset error")
             emit(AuthResult.Error(e.message ?: "Password reset failed"))
+        }
+    }
+
+    override fun signInWithGoogle(idToken: String): Flow<AuthResult> = flow {
+        emit(AuthResult.Loading)
+        try {
+            val credential = GoogleAuthProvider.getCredential(idToken, null)
+            val result = firebaseAuth.signInWithCredential(credential).await()
+            result.user?.let { user ->
+                emit(AuthResult.Success(user.toUserDto().toDomain()))
+            } ?: emit(AuthResult.Error("Google sign in failed"))
+        } catch (e: Exception) {
+            Timber.e(e, "Google sign in error")
+            emit(AuthResult.Error(e.message ?: "Google sign in failed"))
         }
     }
 

@@ -8,6 +8,7 @@ import com.example.firebaseexample.domain.usecases.SendPasswordResetUseCase
 import com.example.firebaseexample.domain.usecases.SignInUseCase
 import com.example.firebaseexample.domain.usecases.SignOutUseCase
 import com.example.firebaseexample.domain.usecases.SignUpUseCase
+import com.example.firebaseexample.domain.usecases.SignInWithGoogleUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -23,7 +24,8 @@ class AuthViewModel @Inject constructor(
     private val signUpUseCase: SignUpUseCase,
     private val signOutUseCase: SignOutUseCase,
     private val getCurrentUserUseCase: GetCurrentUserUseCase,
-    private val sendPasswordResetUseCase: SendPasswordResetUseCase
+    private val sendPasswordResetUseCase: SendPasswordResetUseCase,
+    private val signInWithGoogleUseCase: SignInWithGoogleUseCase
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(AuthState())
@@ -46,6 +48,9 @@ class AuthViewModel @Inject constructor(
             }
             is AuthEvent.SendPasswordReset -> {
                 sendPasswordReset(event.email)
+            }
+            is AuthEvent.SignInWithGoogle -> {
+                signInWithGoogle(event.idToken)
             }
             is AuthEvent.ClearError -> {
                 _state.update { it.copy(error = null) }
@@ -71,7 +76,7 @@ class AuthViewModel @Inject constructor(
 
     private fun signIn(email: String, password: String) {
         viewModelScope.launch {
-            _state.update { it.copy(isLoading = true, error = null) }
+            _state.update { it.copy(isLoading = true, error = null, successMessage = null) }
             
             signInUseCase(email, password).collect { result ->
                 when (result) {
@@ -104,7 +109,7 @@ class AuthViewModel @Inject constructor(
 
     private fun signUp(email: String, password: String) {
         viewModelScope.launch {
-            _state.update { it.copy(isLoading = true, error = null) }
+            _state.update { it.copy(isLoading = true, error = null, successMessage = null) }
             
             signUpUseCase(email, password).collect { result ->
                 when (result) {
@@ -137,7 +142,7 @@ class AuthViewModel @Inject constructor(
 
     private fun signOut() {
         viewModelScope.launch {
-            _state.update { it.copy(isLoading = true, error = null) }
+            _state.update { it.copy(isLoading = true, error = null, successMessage = null) }
             
             signOutUseCase().collect { result ->
                 when (result) {
@@ -195,6 +200,40 @@ class AuthViewModel @Inject constructor(
                             )
                         }
                         Timber.e("Password reset error: ${result.message}")
+                    }
+                }
+            }
+        }
+    }
+
+    private fun signInWithGoogle(idToken: String) {
+        viewModelScope.launch {
+            _state.update { it.copy(isLoading = true, error = null, successMessage = null) }
+            
+            signInWithGoogleUseCase(idToken).collect { result ->
+                when (result) {
+                    is AuthResult.Loading -> {
+                        _state.update { it.copy(isLoading = true) }
+                    }
+                    is AuthResult.Success -> {
+                        _state.update { 
+                            it.copy(
+                                isLoading = false,
+                                user = result.user,
+                                isAuthenticated = true,
+                                error = null
+                            )
+                        }
+                        Timber.d("Google sign in successful: ${result.user.email}")
+                    }
+                    is AuthResult.Error -> {
+                        _state.update { 
+                            it.copy(
+                                isLoading = false,
+                                error = result.message
+                            )
+                        }
+                        Timber.e("Google sign in error: ${result.message}")
                     }
                 }
             }
