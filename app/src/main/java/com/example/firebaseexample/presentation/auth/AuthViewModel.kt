@@ -74,7 +74,6 @@ class AuthViewModel @Inject constructor(
                 _state.update {
                     it.copy(
                         user = user,
-                        isAuthenticated = user != null,
                         isInitialized = true
                     )
                 }
@@ -96,7 +95,6 @@ class AuthViewModel @Inject constructor(
                             it.copy(
                                 isLoading = false,
                                 user = result.user,
-                                isAuthenticated = true,
                                 error = null
                             )
                         }
@@ -129,7 +127,6 @@ class AuthViewModel @Inject constructor(
                             it.copy(
                                 isLoading = false,
                                 user = result.user,
-                                isAuthenticated = true,
                                 error = null
                             )
                         }
@@ -162,7 +159,6 @@ class AuthViewModel @Inject constructor(
                             it.copy(
                                 isLoading = false,
                                 user = null,
-                                isAuthenticated = false,
                                 error = null
                             )
                         }
@@ -228,7 +224,6 @@ class AuthViewModel @Inject constructor(
                             it.copy(
                                 isLoading = false,
                                 user = result.user,
-                                isAuthenticated = true,
                                 error = null
                             )
                         }
@@ -263,7 +258,7 @@ class AuthViewModel @Inject constructor(
     fun checkEmailVerified() {
         viewModelScope.launch {
             isEmailVerifiedUseCase().collect { verified ->
-                _state.update { it.copy(isEmailVerified = verified) }
+                _state.update { it.copy(user = it.user?.copy(isEmailVerified = verified)) }
             }
         }
     }

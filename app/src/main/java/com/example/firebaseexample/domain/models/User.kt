@@ -5,5 +5,5 @@ data class User(
     val email: String,
     val displayName: String?,
     val photoUrl: String?,
-    val isEmailVerified: Boolean
+    val isEmailVerified: Boolean? = null
 ) 

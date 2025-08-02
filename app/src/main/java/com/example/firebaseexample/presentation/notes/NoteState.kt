@@ -7,5 +7,6 @@ data class NoteState(
     val selectedNote: Note? = null,
     val isLoading: Boolean = false,
     val error: String? = null,
-    val successMessage: String? = null
+    val successMessage: String? = null,
+    val isInitialized: Boolean = false
 ) 

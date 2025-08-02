@@ -187,11 +187,6 @@ class AuthFragment : Fragment() {
             showSuccess(message)
             viewModel.onEvent(AuthEvent.ClearSuccessMessage)
         }
-
-        if (state.isAuthenticated) {
-            Timber.d("User authenticated: ${state.user?.email}")
-            // Navigation will be handled by the activity
-        }
     }
 
     private fun showError(message: String) {

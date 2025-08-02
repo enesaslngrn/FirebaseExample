@@ -57,7 +57,8 @@ class NoteViewModel @Inject constructor(
                     _state.update { 
                         it.copy(
                             notes = notes,
-                            isLoading = false
+                            isLoading = false,
+                            isInitialized = true
                         ) 
                     }
                 }
@@ -66,7 +67,8 @@ class NoteViewModel @Inject constructor(
                 _state.update { 
                     it.copy(
                         error = "Failed to load notes",
-                        isLoading = false
+                        isLoading = false,
+                        isInitialized = true
                     ) 
                 }
             }
@@ -82,7 +84,7 @@ class NoteViewModel @Inject constructor(
         
         _state.update { it.copy(isLoading = true) }
         
-        val note: Note = Note(
+        val note = Note(
             id = "",
             title = title,
             content = content,

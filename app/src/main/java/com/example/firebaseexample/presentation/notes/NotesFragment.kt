@@ -20,7 +20,6 @@ import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.snackbar.Snackbar
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
-import timber.log.Timber
 
 @AndroidEntryPoint
 class NotesFragment : Fragment() {
@@ -97,7 +96,7 @@ class NotesFragment : Fragment() {
     private fun updateUI(state: NoteState) {
         binding.apply {
             progressIndicator.isVisible = state.isLoading
-            textViewEmptyState.isVisible = state.notes.isEmpty() && !state.isLoading
+            textViewEmptyState.isVisible = state.notes.isEmpty() && state.isInitialized && !state.isLoading
             recyclerViewNotes.isVisible = state.notes.isNotEmpty()
         }
 

@@ -53,7 +53,19 @@ class HomeFragment : Fragment() {
             authViewModel.onEvent(AuthEvent.SendEmailVerification)
         }
         binding.buttonMyNotes.setOnClickListener {
-            navigateToNotes()
+            checkEmailVerificationAndNavigate()
+        }
+    }
+
+    private fun checkEmailVerificationAndNavigate() {
+        authViewModel.state.value.user?.let {
+            it.isEmailVerified?.let { isEmailVerified ->
+                if (isEmailVerified) {
+                    navigateToNotes()
+                } else {
+                    Snackbar.make(binding.root, getString(R.string.email_verification_required), Snackbar.LENGTH_LONG).show()
+                }
+            }
         }
     }
 
@@ -70,14 +82,13 @@ class HomeFragment : Fragment() {
         state.user?.let { user ->
             binding.userEmailTextView.text = user.email
             binding.userIdTextView.text = getString(R.string.user_id, user.id)
+            user.isEmailVerified?.let {
+                binding.verifiedTextView.isVisible = it
+                binding.sendVerificationButton.isVisible = !it
+            }
             Timber.d("User info displayed: ${user.email}")
         }
-        if (state.user != null) {
-            state.isEmailVerified?.let { isEmailVerified ->
-                binding.sendVerificationButton.isVisible = !isEmailVerified
-                binding.verifiedTextView.isVisible = isEmailVerified
-            }
-        }
+
         state.verificationMessage?.let {
             Snackbar.make(binding.root, getString(R.string.verification_email_sent), Snackbar.LENGTH_LONG).show()
             authViewModel.onEvent(AuthEvent.ClearSuccessMessage)

@@ -38,10 +38,10 @@ class MainActivity : AppCompatActivity() {
         if (!state.isInitialized) {
             return
         }
-        if (state.isAuthenticated) {
+        state.user?.let {
             Timber.d("User is authenticated, showing home fragment")
             showHomeFragment()
-        } else {
+        } ?: run {
             Timber.d("User is not authenticated, showing auth fragment")
             showAuthFragment()
         }

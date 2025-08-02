@@ -4,6 +4,7 @@ import com.example.firebaseexample.data.models.NoteDto
 import com.example.firebaseexample.domain.models.Note
 import com.example.firebaseexample.domain.repository.NoteRepository
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.Query
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
@@ -16,6 +17,7 @@ class NoteRepositoryImpl @Inject constructor(
 ) : NoteRepository {
     override fun getNotes(userId: String): Flow<List<Note>> = callbackFlow {
         val ref = firestore.collection("users").document(userId).collection("notes")
+            .orderBy("timestamp", Query.Direction.DESCENDING)
         val listener = ref.addSnapshotListener { snapshot, _ ->
             val notes = snapshot?.documents?.mapNotNull { it.toObject(NoteDto::class.java)?.toDomain() } ?: emptyList()
             trySend(notes)
