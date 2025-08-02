@@ -7,4 +7,14 @@
     <dimen name="spacing_32">32dp</dimen>
     <dimen name="card_corner_radius">8dp</dimen>
     <dimen name="card_elevation">4dp</dimen>
+    
+    <!-- Margins -->
+    <dimen name="margin_small">8dp</dimen>
+    <dimen name="margin_medium">16dp</dimen>
+    <dimen name="margin_large">24dp</dimen>
+    
+    <!-- Padding -->
+    <dimen name="padding_small">8dp</dimen>
+    <dimen name="padding_medium">16dp</dimen>
+    <dimen name="padding_large">24dp</dimen>
 </resources> 

@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.coordinatorlayout.widget.CoordinatorLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="?attr/colorSurface">
+
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+
+        <com.google.android.material.appbar.MaterialToolbar
+            android:id="@+id/toolbar"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:background="?attr/colorSurface"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            app:title="@string/my_notes"
+            app:titleTextColor="?attr/colorOnSurface" />
+
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/recyclerViewNotes"
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            android:clipToPadding="false"
+            android:paddingBottom="@dimen/padding_large"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/toolbar"
+            tools:listitem="@layout/item_note" />
+
+        <TextView
+            android:id="@+id/textViewEmptyState"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/no_notes_yet"
+            android:textAppearance="?attr/textAppearanceBodyLarge"
+            android:textColor="?attr/colorOnSurfaceVariant"
+            android:visibility="gone"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            tools:visibility="visible" />
+
+        <com.google.android.material.progressindicator.CircularProgressIndicator
+            android:id="@+id/progressIndicator"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:indeterminate="true"
+            android:visibility="gone"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            tools:visibility="visible" />
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
+        android:id="@+id/fabAddNote"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom|end"
+        android:layout_margin="@dimen/margin_large"
+        android:contentDescription="@string/add_note"
+        app:srcCompat="@drawable/ic_add"
+        app:tint="?attr/colorOnPrimary" />
+
+</androidx.coordinatorlayout.widget.CoordinatorLayout> 

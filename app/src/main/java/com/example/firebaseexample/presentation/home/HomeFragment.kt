@@ -18,6 +18,8 @@ import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import timber.log.Timber
 import com.google.android.material.snackbar.Snackbar
+import androidx.fragment.app.commit
+import com.example.firebaseexample.presentation.notes.NotesFragment
 
 @AndroidEntryPoint
 class HomeFragment : Fragment() {
@@ -50,6 +52,9 @@ class HomeFragment : Fragment() {
         binding.sendVerificationButton.setOnClickListener {
             authViewModel.onEvent(AuthEvent.SendEmailVerification)
         }
+        binding.buttonMyNotes.setOnClickListener {
+            navigateToNotes()
+        }
     }
 
     private fun observeAuthState() {
@@ -76,6 +81,13 @@ class HomeFragment : Fragment() {
         state.verificationMessage?.let {
             Snackbar.make(binding.root, getString(R.string.verification_email_sent), Snackbar.LENGTH_LONG).show()
             authViewModel.onEvent(AuthEvent.ClearSuccessMessage)
+        }
+    }
+
+    private fun navigateToNotes() {
+        parentFragmentManager.commit {
+            replace(R.id.fragmentContainer, NotesFragment())
+            addToBackStack(null)
         }
     }
 

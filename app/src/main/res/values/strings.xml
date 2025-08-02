@@ -24,4 +24,19 @@
     <string name="verification_email_sent">Verification email sent. Please check your inbox.</string>
     <string name="email_verified">Your email is verified.</string>
     <string name="check_verification">Check Verification</string>
+    
+    <!-- Notes -->
+    <string name="my_notes">My Notes</string>
+    <string name="add_note">Add Note</string>
+    <string name="edit_note">Edit Note</string>
+    <string name="delete_note">Delete Note</string>
+    <string name="note_title">Title</string>
+    <string name="note_content">Content</string>
+    <string name="no_notes_yet">No notes yet. Tap + to add your first note.</string>
+    <string name="title_cannot_be_empty">Title cannot be empty</string>
+    <string name="delete_note_confirmation">Are you sure you want to delete "%s"?</string>
+    <string name="add">Add</string>
+    <string name="update">Update</string>
+    <string name="delete">Delete</string>
+    <string name="cancel">Cancel</string>
 </resources>

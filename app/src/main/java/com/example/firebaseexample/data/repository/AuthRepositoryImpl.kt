@@ -20,6 +20,12 @@ class AuthRepositoryImpl @Inject constructor(
 ) : AuthRepository {
 
     override fun getCurrentUser(): Flow<User?> = callbackFlow {
+        /**
+         * Bu yapı, callback tabanlı API’leri Kotlin Flow’a çevirmek için kullanılır.
+         * FirebaseAuth.AuthStateListener bir callback olduğu için callbackFlow doğru seçimdir.
+         * trySend(user) - Listener tetiklendiğinde yeni kullanıcı durumu Flow'a gönderilir. Bu sayede collect {} bloğunda UI otomatik güncellenebilir.
+         * awaitClose - Flow iptal edildiğinde (örneğin fragment destroy olduğunda) dinleyiciyi kaldırır. Bellek sızıntısı (memory leak) yaşanmaması için çok önemlidir.
+         */
         val listener = FirebaseAuth.AuthStateListener { auth ->
             val user = auth.currentUser?.toUserDto()?.toDomain()
             trySend(user)
