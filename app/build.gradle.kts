@@ -13,6 +13,7 @@ android {
 
     buildFeatures {
         viewBinding = true
+        buildConfig = true
     }
 
     defaultConfig {
@@ -57,6 +58,9 @@ dependencies {
     implementation(libs.firebase.storage)
     implementation(libs.firebase.crashlytics)
     implementation(libs.firebase.config)
+
+    // Splash Api
+    implementation(libs.core.splashscreen)
 
     // Hilt
     implementation(libs.hilt.android)

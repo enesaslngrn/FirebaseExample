@@ -6,4 +6,11 @@
     </style>
 
     <style name="Theme.FirebaseExample" parent="Base.Theme.FirebaseExample" />
+    
+    <!-- Splash Screen Theme -->
+    <style name="Theme.Splash" parent="Theme.SplashScreen">
+        <item name="windowSplashScreenBackground">?android:colorBackground</item>
+        <item name="windowSplashScreenAnimatedIcon">@mipmap/ic_launcher</item>
+        <item name="postSplashScreenTheme">@style/Theme.FirebaseExample</item>
+    </style>
 </resources>
