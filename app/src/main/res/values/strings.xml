@@ -46,5 +46,10 @@
     <string name="maintenance_mode_title">Maintenance Mode</string>
     <string name="maintenance_mode_message">The app is currently under maintenance. Please try again later.</string>
     <string name="ok">OK</string>
+    
+    <!-- Account Deletion -->
+    <string name="delete_account">Delete Account</string>
+    <string name="delete_account_title">Delete Account</string>
+    <string name="delete_account_message">Are you sure you want to delete your account? This action cannot be undone and all your data will be permanently deleted.</string>
 
 </resources>

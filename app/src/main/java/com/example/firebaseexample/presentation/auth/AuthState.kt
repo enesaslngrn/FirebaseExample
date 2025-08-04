@@ -7,6 +7,7 @@ data class AuthState(
     val user: User? = null,
     val error: String? = null,
     val successMessage: String? = null,
+    val isInitialized: Boolean = false,
     val verificationMessage: String? = null,
-    val isInitialized: Boolean = false
-) 
+    val accountDeleted: Boolean = false
+)

@@ -9,4 +9,5 @@ sealed class AuthEvent {
     data object SendEmailVerification : AuthEvent()
     data object ClearError : AuthEvent()
     data object ClearSuccessMessage : AuthEvent()
+    data object DeleteAccount : AuthEvent()
 } 

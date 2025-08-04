@@ -13,4 +13,6 @@ interface AuthRepository {
     fun sendPasswordResetEmail(email: String): Flow<AuthResult>
     fun sendEmailVerification(): Flow<AuthResult>
     fun isEmailVerified(): Flow<Boolean>
+    fun deleteAccount(): Flow<AuthResult>
+    suspend fun reloadCurrentUser()
 } 

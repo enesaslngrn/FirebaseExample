@@ -7,6 +7,7 @@ import com.example.firebaseexample.data.models.UserDto
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.auth.GoogleAuthProvider
+import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
@@ -16,7 +17,8 @@ import timber.log.Timber
 import javax.inject.Inject
 
 class AuthRepositoryImpl @Inject constructor(
-    private val firebaseAuth: FirebaseAuth
+    private val firebaseAuth: FirebaseAuth,
+    private val firestore: FirebaseFirestore
 ) : AuthRepository {
 
     override fun getCurrentUser(): Flow<User?> = callbackFlow {
@@ -116,6 +118,66 @@ class AuthRepositoryImpl @Inject constructor(
         val user = firebaseAuth.currentUser
         user?.reload()?.await()
         emit(user?.isEmailVerified == true)
+    }
+
+    override fun deleteAccount(): Flow<AuthResult> = flow {
+        emit(AuthResult.Loading)
+        val user = firebaseAuth.currentUser
+        if (user != null) {
+            try {
+                val userId = user.uid
+                
+                // First delete user data from Firestore
+                deleteUserDataFromFirestore(userId)
+
+                // Then delete the Firebase Auth account
+                user.delete().await()
+                
+                emit(AuthResult.AccountDeleted)
+                Timber.d("Account deleted successfully")
+            } catch (e: Exception) {
+                Timber.e(e, "Account deletion error")
+                emit(AuthResult.Error(e.message ?: "Failed to delete account"))
+            }
+        } else {
+            emit(AuthResult.Error("No user logged in"))
+        }
+    }
+
+    private suspend fun deleteUserDataFromFirestore(userId: String) {
+        try {
+            // Delete user's notes collection
+            val notesCollection = firestore.collection("users").document(userId).collection("notes")
+            val notesSnapshot = notesCollection.get().await()
+
+            // Delete all notes individually instead of batch
+            for (document in notesSnapshot.documents) {
+                try {
+                    document.reference.delete().await()
+                    Timber.d("Deleted note: ${document.id}")
+                } catch (e: Exception) {
+                    Timber.w(e, "Failed to delete note: ${document.id}")
+                    // Continue with other notes even if one fails
+                }
+            }
+
+            // Delete user document
+            try {
+                firestore.collection("users").document(userId).delete().await()
+                Timber.d("User document deleted from Firestore successfully")
+            } catch (e: Exception) {
+                Timber.w(e, "Failed to delete user document, but continuing with account deletion")
+                // Don't throw exception here, allow account deletion to continue
+            }
+
+        } catch (e: Exception) {
+            Timber.w(e, "Error accessing user data in Firestore, but continuing with account deletion")
+            // Don't throw exception here, allow Firebase Auth account deletion to proceed
+        }
+    }
+
+    override suspend fun reloadCurrentUser() {
+        firebaseAuth.currentUser?.reload()?.await()
     }
 
     private fun FirebaseUser.toUserDto(): UserDto {

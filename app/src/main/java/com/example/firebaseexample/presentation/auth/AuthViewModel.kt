@@ -3,6 +3,7 @@ package com.example.firebaseexample.presentation.auth
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.firebaseexample.domain.models.AuthResult
+import com.example.firebaseexample.domain.repository.AuthRepository
 import com.example.firebaseexample.domain.usecases.GetCurrentUserUseCase
 import com.example.firebaseexample.domain.usecases.SendPasswordResetUseCase
 import com.example.firebaseexample.domain.usecases.SignInUseCase
@@ -11,6 +12,7 @@ import com.example.firebaseexample.domain.usecases.SignUpUseCase
 import com.example.firebaseexample.domain.usecases.SignInWithGoogleUseCase
 import com.example.firebaseexample.domain.usecases.SendEmailVerificationUseCase
 import com.example.firebaseexample.domain.usecases.IsEmailVerifiedUseCase
+import com.example.firebaseexample.domain.usecases.DeleteAccountUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -22,6 +24,7 @@ import javax.inject.Inject
 
 @HiltViewModel
 class AuthViewModel @Inject constructor(
+    private val authRepository: AuthRepository,
     private val signInUseCase: SignInUseCase,
     private val signUpUseCase: SignUpUseCase,
     private val signOutUseCase: SignOutUseCase,
@@ -29,7 +32,8 @@ class AuthViewModel @Inject constructor(
     private val sendPasswordResetUseCase: SendPasswordResetUseCase,
     private val signInWithGoogleUseCase: SignInWithGoogleUseCase,
     private val sendEmailVerificationUseCase: SendEmailVerificationUseCase,
-    private val isEmailVerifiedUseCase: IsEmailVerifiedUseCase
+    private val isEmailVerifiedUseCase: IsEmailVerifiedUseCase,
+    private val deleteAccountUseCase: DeleteAccountUseCase
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(AuthState())
@@ -59,11 +63,14 @@ class AuthViewModel @Inject constructor(
             is AuthEvent.SendEmailVerification -> {
                 sendEmailVerification()
             }
+            is AuthEvent.DeleteAccount -> {
+                deleteAccount()
+            }
             is AuthEvent.ClearError -> {
                 _state.update { it.copy(error = null) }
             }
             is AuthEvent.ClearSuccessMessage -> {
-                _state.update { it.copy(successMessage = null) }
+                _state.update { it.copy(successMessage = null, accountDeleted = false) }
             }
         }
     }
@@ -108,6 +115,10 @@ class AuthViewModel @Inject constructor(
                         }
                         Timber.e("Sign in error: ${result.message}")
                     }
+                    is AuthResult.AccountDeleted -> {
+                        // This shouldn't happen in sign in, but handle it for completeness
+                        _state.update { it.copy(isLoading = false) }
+                    }
                 }
             }
         }
@@ -140,6 +151,10 @@ class AuthViewModel @Inject constructor(
                         }
                         Timber.e("Sign up error: ${result.message}")
                     }
+                    is AuthResult.AccountDeleted -> {
+                        // This shouldn't happen in sign up, but handle it for completeness
+                        _state.update { it.copy(isLoading = false) }
+                    }
                 }
             }
         }
@@ -171,6 +186,10 @@ class AuthViewModel @Inject constructor(
                             )
                         }
                         Timber.e("Sign out error: ${result.message}")
+                    }
+                    is AuthResult.AccountDeleted -> {
+                        // This shouldn't happen in sign out, but handle it for completeness
+                        _state.update { it.copy(isLoading = false) }
                     }
                 }
             }
@@ -205,6 +224,10 @@ class AuthViewModel @Inject constructor(
                         }
                         Timber.e("Password reset error: ${result.message}")
                     }
+                    is AuthResult.AccountDeleted -> {
+                        // This shouldn't happen in password reset, but handle it for completeness
+                        _state.update { it.copy(isLoading = false) }
+                    }
                 }
             }
         }
@@ -238,6 +261,10 @@ class AuthViewModel @Inject constructor(
                         }
                         Timber.e("Google sign in error: ${result.message}")
                     }
+                    is AuthResult.AccountDeleted -> {
+                        // This shouldn't happen in Google sign in, but handle it for completeness
+                        _state.update { it.copy(isLoading = false) }
+                    }
                 }
             }
         }
@@ -250,16 +277,59 @@ class AuthViewModel @Inject constructor(
                     is AuthResult.Loading -> _state.update { it.copy(isLoading = true) }
                     is AuthResult.Success -> _state.update { it.copy(isLoading = false, verificationMessage = "Verification email sent") }
                     is AuthResult.Error -> _state.update { it.copy(isLoading = false, error = result.message) }
+                    is AuthResult.AccountDeleted -> _state.update { it.copy(isLoading = false) }
                 }
             }
         }
     }
 
-    fun checkEmailVerified() {
+    private fun deleteAccount() {
         viewModelScope.launch {
-            isEmailVerifiedUseCase().collect { verified ->
-                _state.update { it.copy(user = it.user?.copy(isEmailVerified = verified)) }
+            _state.update { it.copy(isLoading = true, error = null, successMessage = null) }
+            
+            deleteAccountUseCase().collect { result ->
+                when (result) {
+                    is AuthResult.Loading -> {
+                        _state.update { it.copy(isLoading = true) }
+                    }
+                    is AuthResult.AccountDeleted -> {
+                        _state.update { 
+                            it.copy(
+                                isLoading = false,
+                                user = null,
+                                error = null,
+                                successMessage = "Account deleted successfully",
+                                accountDeleted = true
+                            )
+                        }
+                        Timber.d("Account deleted successfully")
+                    }
+                    is AuthResult.Error -> {
+                        _state.update { 
+                            it.copy(
+                                isLoading = false,
+                                error = result.message
+                            )
+                        }
+                        Timber.e("Account deletion error: ${result.message}")
+                    }
+                    is AuthResult.Success -> {
+                        // This shouldn't happen in account deletion, but handle it for completeness
+                        _state.update { it.copy(isLoading = false) }
+                    }
+                }
             }
+        }
+    }
+
+    fun reloadCurrentUser(onComplete: (() -> Unit)? = null) {
+        viewModelScope.launch {
+            try {
+                // Use repository method instead of direct Firebase call
+                authRepository.reloadCurrentUser()
+            } catch (_: Exception) {} // Suppress exceptions for reload
+            observeCurrentUser() // Re-collect the user state after reload
+            onComplete?.invoke()
         }
     }
 } 
