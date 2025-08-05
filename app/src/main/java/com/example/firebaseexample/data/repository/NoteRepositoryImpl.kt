@@ -41,7 +41,12 @@ class NoteRepositoryImpl @Inject constructor(
         try {
             val ref = firestore.collection("users").document(userId).collection("notes")
             val noteDto = NoteDto.fromDomain(note.copy(updatedAt = System.currentTimeMillis()))
+            //val noteDtoSet = NoteDto(title = note.title, content = note.content) // Eğer set kullanacaksak NoteDto hep dolu olmalı.
             ref.document(note.id).set(noteDto).await()
+
+            //val updatedFields = mapOf("title" to note.title, "content" to note.content) // Sadece update edilecek alan dolu olsa yeterli.
+            //ref.document(note.id).update(updatedFields).await()
+
             emit(Result.success(Unit))
         } catch (e: Exception) {
             emit(Result.failure(e))
