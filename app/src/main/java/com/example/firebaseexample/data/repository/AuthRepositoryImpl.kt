@@ -5,6 +5,8 @@ import com.example.firebaseexample.domain.models.User
 import com.example.firebaseexample.domain.repository.AuthRepository
 import com.example.firebaseexample.data.models.UserDto
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.auth.FirebaseAuthInvalidCredentialsException
+import com.google.firebase.auth.FirebaseAuthInvalidUserException
 import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.auth.GoogleAuthProvider
 import com.google.firebase.firestore.FirebaseFirestore
@@ -44,11 +46,60 @@ class AuthRepositoryImpl @Inject constructor(
             result.user?.let { user ->
                 emit(AuthResult.Success(user.toUserDto().toDomain()))
             } ?: emit(AuthResult.Error("Sign in failed"))
+        } catch (e: FirebaseAuthInvalidCredentialsException) {
+            emit(AuthResult.Error("Invalid credentials"))
+        } catch (e: FirebaseAuthInvalidUserException) {
+            emit(AuthResult.Error("User not found"))
         } catch (e: Exception) {
             Timber.e(e, "Sign in error")
             emit(AuthResult.Error(e.message ?: "Sign in failed"))
         }
     }
+
+//    override fun signInWithEmailAndPassword(email: String, password: String): Flow<AuthResult> = callbackFlow {
+//        trySend(AuthResult.Loading)
+//
+//        val task = firebaseAuth.signInWithEmailAndPassword(email, password)
+//        task.addOnCompleteListener { taskResult ->
+//            if (taskResult.isSuccessful) {
+//                val user = taskResult.result?.user
+//                if (user != null) {
+//                    trySend(AuthResult.Success(user.toUserDto().toDomain()))
+//                } else {
+//                    trySend(AuthResult.Error("Sign in failed"))
+//                }
+//            } else {
+//                val error = taskResult.exception?.message ?: "Sign in failed"
+//                Timber.e(taskResult.exception, "Sign in error")
+//                trySend(AuthResult.Error(error))
+//            }
+//            close()
+//        }
+//
+//        awaitClose { /* no active listener to remove in this case */ }
+//    }
+
+//    override fun signInWithEmailAndPassword(email: String, password: String): Flow<AuthResult> = callbackFlow {
+//        trySend(AuthResult.Loading)
+//
+//        val task = firebaseAuth.signInWithEmailAndPassword(email, password)
+//        task.addOnSuccessListener { result ->
+//            val user = result.user
+//            if (user != null) {
+//                trySend(AuthResult.Success(user.toUserDto().toDomain()))
+//            } else {
+//                trySend(AuthResult.Error("Sign in failed"))
+//            }
+//            close()
+//        }.addOnFailureListener { exception ->
+//            Timber.e(exception, "Sign in error")
+//            trySend(AuthResult.Error(exception.message ?: "Sign in failed"))
+//            close()
+//        }
+//
+//        awaitClose { /* clean-up if needed */ }
+//    }
+
 
     override fun signUpWithEmailAndPassword(email: String, password: String): Flow<AuthResult> = flow {
         emit(AuthResult.Loading)
