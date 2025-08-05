@@ -173,7 +173,7 @@ class AuthViewModel @Inject constructor(
                         _state.update { 
                             it.copy(isLoading = false, user = result.user, error = null)
                         }
-                        Timber.d("Google sign in successful: ${result.user.email}")
+                        Timber.d("Google sign in successful: ${result.user?.email}")
                     }
                     is AuthResult.Error -> {
                         _state.update { it.copy(isLoading = false, error = result.message) }

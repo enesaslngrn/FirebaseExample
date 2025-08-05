@@ -118,7 +118,7 @@ class AuthRepositoryImpl @Inject constructor(
         emit(AuthResult.Loading)
         try {
             firebaseAuth.signOut()
-            emit(AuthResult.Success(User("", "", null, null, false)))
+            emit(AuthResult.Success(user = null))
         } catch (e: Exception) {
             Timber.e(e, "Sign out error")
             emit(AuthResult.Error(e.message ?: "Sign out failed"))
@@ -129,7 +129,7 @@ class AuthRepositoryImpl @Inject constructor(
         emit(AuthResult.Loading)
         try {
             firebaseAuth.sendPasswordResetEmail(email).await()
-            emit(AuthResult.Success(User("", "", null, null, false)))
+            emit(AuthResult.Success(user = null))
         } catch (e: Exception) {
             Timber.e(e, "Password reset error")
             emit(AuthResult.Error(e.message ?: "Password reset failed"))
@@ -178,7 +178,7 @@ class AuthRepositoryImpl @Inject constructor(
                 // Then delete the Firebase Auth account
                 user.delete().await()
                 
-                emit(AuthResult.Success(User("", "", null, null, false)))
+                emit(AuthResult.Success(user = null))
                 Timber.d("Account deleted successfully")
             } catch (e: Exception) {
                 Timber.e(e, "Account deletion error")
