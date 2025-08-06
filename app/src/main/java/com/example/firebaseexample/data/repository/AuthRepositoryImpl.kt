@@ -9,6 +9,8 @@ import com.google.firebase.auth.FirebaseAuthInvalidCredentialsException
 import com.google.firebase.auth.FirebaseAuthInvalidUserException
 import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.auth.GoogleAuthProvider
+import com.google.firebase.auth.EmailAuthProvider
+import com.google.firebase.auth.FirebaseAuthRecentLoginRequiredException
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
@@ -174,7 +176,7 @@ class AuthRepositoryImpl @Inject constructor(
                 
                 // First delete user data from Firestore
                 deleteUserDataFromFirestore(userId)
-                
+
                 // Then delete the Firebase Auth account
                 user.delete().await()
                 
@@ -182,7 +184,50 @@ class AuthRepositoryImpl @Inject constructor(
                 Timber.d("Account deleted successfully")
             } catch (e: Exception) {
                 Timber.e(e, "Account deletion error")
-                emit(AuthResult.Error(e.message ?: "Failed to delete account"))
+                when (e) {
+                    is FirebaseAuthRecentLoginRequiredException -> {
+                        emit(AuthResult.Error("This operation is sensitive and requires recent authentication."))
+                    }
+                    else -> {
+                        emit(AuthResult.Error(e.message ?: "Failed to delete account"))
+                    }
+                }
+            }
+        } else {
+            emit(AuthResult.Error("No user logged in"))
+        }
+    }
+
+    override fun changePassword(currentPassword: String, newPassword: String): Flow<AuthResult> = flow {
+        emit(AuthResult.Loading)
+        val user = firebaseAuth.currentUser
+        if (user != null) {
+            try {
+                // First reauthenticate the user with current password
+                /**
+                 * Hassas işlemler yapmadan önce kullanıcının kimliğinin tekrar doğrulanması (reauthentication) güvenlik gereği zorunludur.
+                 * Bu yüzden credentials (kimlik bilgileri) alınıp önce reauthenticate() edilir.
+                 * Change password OAuth için geçerli değildir. Sadece Email&Password girişi yapmış kullanıcılar içindir.
+                 */
+                val credential = EmailAuthProvider.getCredential(user.email ?: "", currentPassword)
+                user.reauthenticate(credential).await()
+                
+                // Then update password
+                user.updatePassword(newPassword).await()
+                emit(AuthResult.Success(user.toUserDto().toDomain()))
+            } catch (e: Exception) {
+                Timber.e(e, "Password change error")
+                when (e) {
+                    is FirebaseAuthRecentLoginRequiredException -> {
+                        emit(AuthResult.Error("This operation is sensitive and requires recent authentication."))
+                    }
+                    is FirebaseAuthInvalidCredentialsException -> {
+                        emit(AuthResult.Error("Current password is incorrect"))
+                    }
+                    else -> {
+                        emit(AuthResult.Error(e.message ?: "Failed to change password"))
+                    }
+                }
             }
         } else {
             emit(AuthResult.Error("No user logged in"))

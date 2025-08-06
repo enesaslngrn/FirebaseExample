@@ -25,6 +25,16 @@
     <string name="email_verified">Your email is verified.</string>
     <string name="check_verification">Check Verification</string>
     
+    <!-- Password Change -->
+    <string name="change_password">Change Password</string>
+    <string name="current_password">Current Password</string>
+    <string name="new_password">New Password</string>
+    <string name="password_changed_successfully">Password changed successfully</string>
+    <string name="please_enter_current_password">Please enter your current password</string>
+    <string name="please_enter_new_password">Please enter your new password</string>
+    <string name="new_password_too_short">New password must be at least 6 characters</string>
+    <string name="new_password_same_as_current">New password must be different from current password</string>
+    
     <!-- Notes -->
     <string name="my_notes">My Notes</string>
     <string name="add_note">Add Note</string>

@@ -10,6 +10,7 @@ import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
 import com.example.firebaseexample.R
 import com.example.firebaseexample.databinding.FragmentHomeBinding
+import com.example.firebaseexample.databinding.DialogChangePasswordBinding
 import com.example.firebaseexample.presentation.auth.AuthEvent
 import com.example.firebaseexample.presentation.auth.AuthState
 import com.example.firebaseexample.presentation.auth.AuthViewModel
@@ -57,6 +58,10 @@ class HomeFragment : Fragment() {
             authViewModel.onEvent(AuthEvent.SendEmailVerification)
         }
         
+        binding.changePasswordButton.setOnClickListener {
+            showChangePasswordDialog()
+        }
+        
         binding.buttonMyNotes.setOnClickListener {
             checkEmailVerificationAndNavigate()
         }
@@ -71,6 +76,48 @@ class HomeFragment : Fragment() {
             }
             .setNegativeButton(getString(R.string.cancel), null)
             .show()
+    }
+
+    private fun showChangePasswordDialog() {
+        val dialogBinding: DialogChangePasswordBinding = DialogChangePasswordBinding.inflate(layoutInflater)
+        
+        MaterialAlertDialogBuilder(requireContext())
+            .setTitle(getString(R.string.change_password))
+            .setView(dialogBinding.root)
+            .setPositiveButton(getString(R.string.change_password)) { _, _ ->
+                val currentPassword: String = dialogBinding.editTextCurrentPassword.text.toString().trim()
+                val newPassword: String = dialogBinding.editTextNewPassword.text.toString().trim()
+
+                if (validatePasswordChange(currentPassword, newPassword)) {
+                    authViewModel.onEvent(AuthEvent.ChangePassword(currentPassword, newPassword))
+                }
+            }
+            .setNegativeButton(getString(R.string.cancel), null)
+            .show()
+    }
+
+    private fun validatePasswordChange(currentPassword: String, newPassword: String): Boolean {
+        if (currentPassword.isEmpty()) {
+            showSnackbar(getString(R.string.please_enter_current_password))
+            return false
+        }
+        
+        if (newPassword.isEmpty()) {
+            showSnackbar(getString(R.string.please_enter_new_password))
+            return false
+        }
+        
+        if (newPassword.length < 6) {
+            showSnackbar(getString(R.string.new_password_too_short))
+            return false
+        }
+        
+        if (currentPassword == newPassword) {
+            showSnackbar(getString(R.string.new_password_same_as_current))
+            return false
+        }
+        
+        return true
     }
 
     private fun checkEmailVerificationAndNavigate() {
@@ -103,7 +150,7 @@ class HomeFragment : Fragment() {
     }
 
     private fun updateUI(state: AuthState) {
-        binding.progressIndicator.visibility = if (state.isLoading) View.VISIBLE else View.GONE
+        binding.progressIndicator.isVisible = state.isLoading
         
         state.user?.let { user ->
             binding.userEmailTextView.text = user.email
@@ -117,13 +164,21 @@ class HomeFragment : Fragment() {
 
         state.verificationMessage?.let {
             Snackbar.make(binding.root, getString(R.string.verification_email_sent), Snackbar.LENGTH_LONG).show()
-            authViewModel.onEvent(AuthEvent.ClearSuccessMessage)
         }
 
         state.error?.let { error ->
             Snackbar.make(binding.root, error, Snackbar.LENGTH_LONG).show()
             authViewModel.onEvent(AuthEvent.ClearError)
         }
+
+        state.successMessage?.let { message ->
+            Snackbar.make(binding.root, message, Snackbar.LENGTH_LONG).show()
+            authViewModel.onEvent(AuthEvent.ClearSuccessMessage)
+        }
+    }
+
+    private fun showSnackbar(message: String) {
+        Snackbar.make(binding.root, message, Snackbar.LENGTH_LONG).show()
     }
 
     private fun handleAccountDeletion(state: AuthState) {

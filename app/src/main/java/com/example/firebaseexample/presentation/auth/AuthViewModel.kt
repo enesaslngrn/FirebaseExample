@@ -12,6 +12,7 @@ import com.example.firebaseexample.domain.usecases.SignInWithGoogleUseCase
 import com.example.firebaseexample.domain.usecases.SendEmailVerificationUseCase
 import com.example.firebaseexample.domain.usecases.DeleteAccountUseCase
 import com.example.firebaseexample.domain.usecases.ReloadUserUseCase
+import com.example.firebaseexample.domain.usecases.ChangePasswordUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -32,7 +33,8 @@ class AuthViewModel @Inject constructor(
     private val signInWithGoogleUseCase: SignInWithGoogleUseCase,
     private val sendEmailVerificationUseCase: SendEmailVerificationUseCase,
     private val deleteAccountUseCase: DeleteAccountUseCase,
-    private val reloadUserUseCase: ReloadUserUseCase
+    private val reloadUserUseCase: ReloadUserUseCase,
+    private val changePasswordUseCase: ChangePasswordUseCase
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(AuthState())
@@ -63,6 +65,7 @@ class AuthViewModel @Inject constructor(
             is AuthEvent.DeleteAccount -> deleteAccount()
             is AuthEvent.ClearError -> _state.update { it.copy(error = null) }
             is AuthEvent.ClearSuccessMessage -> _state.update { it.copy(successMessage = null, accountDeleted = false) }
+            is AuthEvent.ChangePassword -> changePassword(event.currentPassword, event.newPassword)
         }
     }
 
@@ -218,6 +221,32 @@ class AuthViewModel @Inject constructor(
                     is AuthResult.Error -> {
                         _state.update { it.copy(isLoading = false, error = result.message) }
                         Timber.e("Account deletion error: ${result.message}")
+                    }
+                }
+            }
+        }
+    }
+
+    private fun changePassword(currentPassword: String, newPassword: String) {
+        viewModelScope.launch {
+            _state.update { it.copy(isLoading = true, error = null, successMessage = null) }
+            
+            changePasswordUseCase(currentPassword, newPassword).collect { result ->
+                when (result) {
+                    is AuthResult.Loading -> _state.update { it.copy(isLoading = true) }
+                    is AuthResult.Success -> {
+                        _state.update { 
+                            it.copy(
+                                isLoading = false,
+                                error = null,
+                                successMessage = "Password changed successfully"
+                            )
+                        }
+                        Timber.d("Password changed successfully")
+                    }
+                    is AuthResult.Error -> {
+                        _state.update { it.copy(isLoading = false, error = result.message) }
+                        Timber.e("Password change error: ${result.message}")
                     }
                 }
             }

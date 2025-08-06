@@ -10,4 +10,5 @@ sealed class AuthEvent {
     data object ClearError : AuthEvent()
     data object ClearSuccessMessage : AuthEvent()
     data object DeleteAccount : AuthEvent()
+    data class ChangePassword(val currentPassword: String, val newPassword: String) : AuthEvent()
 } 

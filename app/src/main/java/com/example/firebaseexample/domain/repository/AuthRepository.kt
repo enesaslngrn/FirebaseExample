@@ -13,5 +13,6 @@ interface AuthRepository {
     fun sendPasswordResetEmail(email: String): Flow<AuthResult>
     fun sendEmailVerification(): Flow<AuthResult>
     fun deleteAccount(): Flow<AuthResult>
+    fun changePassword(currentPassword: String, newPassword: String): Flow<AuthResult>
     suspend fun reloadCurrentUser()
 } 

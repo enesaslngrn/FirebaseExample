@@ -76,6 +76,17 @@
         app:layout_constraintTop_toBottomOf="@+id/sendVerificationButton" />
 
     <com.google.android.material.button.MaterialButton
+        android:id="@+id/changePasswordButton"
+        style="@style/Widget.Material3.Button.OutlinedButton"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/spacing_16"
+        android:text="@string/change_password"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/signOutButton" />
+
+    <com.google.android.material.button.MaterialButton
         android:id="@+id/deleteAccountButton"
         style="@style/Widget.Material3.Button.OutlinedButton"
         android:layout_width="wrap_content"
@@ -108,7 +119,7 @@
         android:text="@string/my_notes"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/signOutButton" />
+        app:layout_constraintTop_toBottomOf="@+id/changePasswordButton" />
 
     <com.google.android.material.progressindicator.CircularProgressIndicator
         android:id="@+id/progressIndicator"
