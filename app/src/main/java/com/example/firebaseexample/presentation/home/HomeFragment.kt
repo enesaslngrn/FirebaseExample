@@ -11,6 +11,7 @@ import androidx.lifecycle.lifecycleScope
 import com.example.firebaseexample.R
 import com.example.firebaseexample.databinding.FragmentHomeBinding
 import com.example.firebaseexample.databinding.DialogChangePasswordBinding
+import com.example.firebaseexample.databinding.DialogDeleteAccountBinding
 import com.example.firebaseexample.presentation.auth.AuthEvent
 import com.example.firebaseexample.presentation.auth.AuthState
 import com.example.firebaseexample.presentation.auth.AuthViewModel
@@ -68,11 +69,18 @@ class HomeFragment : Fragment() {
     }
 
     private fun showDeleteAccountConfirmationDialog() {
+        val dialogBinding: DialogDeleteAccountBinding = DialogDeleteAccountBinding.inflate(layoutInflater)
         MaterialAlertDialogBuilder(requireContext())
             .setTitle(getString(R.string.delete_account_title))
             .setMessage(getString(R.string.delete_account_message))
+            .setView(dialogBinding.root)
             .setPositiveButton(getString(R.string.delete)) { _, _ ->
-                authViewModel.onEvent(AuthEvent.DeleteAccount)
+                val currentPassword: String = dialogBinding.editTextCurrentPassword.text.toString().trim()
+                if (currentPassword.isNotEmpty()){
+                    authViewModel.onEvent(AuthEvent.DeleteAccount(currentPassword))
+                } else {
+                    showSnackbar(getString(R.string.please_enter_current_password))
+                }
             }
             .setNegativeButton(getString(R.string.cancel), null)
             .show()

@@ -8,7 +8,7 @@ import javax.inject.Inject
 class DeleteAccountUseCase @Inject constructor(
     private val authRepository: AuthRepository
 ) {
-    operator fun invoke(): Flow<AuthResult> {
-        return authRepository.deleteAccount()
+    operator fun invoke(currentPassword: String): Flow<AuthResult> {
+        return authRepository.deleteAccount(currentPassword)
     }
 } 

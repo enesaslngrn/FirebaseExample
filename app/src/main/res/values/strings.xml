@@ -60,6 +60,6 @@
     <!-- Account Deletion -->
     <string name="delete_account">Delete Account</string>
     <string name="delete_account_title">Delete Account</string>
-    <string name="delete_account_message">Are you sure you want to delete your account? This action cannot be undone and all your data will be permanently deleted.</string>
+    <string name="delete_account_message">Are you sure you want to delete your account? \nEnter your password:</string>
 
 </resources>

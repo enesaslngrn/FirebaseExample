@@ -62,7 +62,7 @@ class AuthViewModel @Inject constructor(
             is AuthEvent.SendPasswordReset -> sendPasswordReset(event.email)
             is AuthEvent.SignInWithGoogle -> signInWithGoogle(event.idToken)
             is AuthEvent.SendEmailVerification -> sendEmailVerification()
-            is AuthEvent.DeleteAccount -> deleteAccount()
+            is AuthEvent.DeleteAccount -> deleteAccount(event.currentPassword)
             is AuthEvent.ClearError -> _state.update { it.copy(error = null) }
             is AuthEvent.ClearSuccessMessage -> _state.update { it.copy(successMessage = null, accountDeleted = false) }
             is AuthEvent.ChangePassword -> changePassword(event.currentPassword, event.newPassword)
@@ -199,11 +199,11 @@ class AuthViewModel @Inject constructor(
         }
     }
 
-    private fun deleteAccount() {
+    private fun deleteAccount(currentPassword: String) {
         viewModelScope.launch {
             _state.update { it.copy(isLoading = true, error = null, successMessage = null) }
             
-            deleteAccountUseCase().collect { result ->
+            deleteAccountUseCase(currentPassword).collect { result ->
                 when (result) {
                     is AuthResult.Loading -> _state.update { it.copy(isLoading = true) }
                     is AuthResult.Success -> {

@@ -167,17 +167,26 @@ class AuthRepositoryImpl @Inject constructor(
         }
     }
 
-    override fun deleteAccount(): Flow<AuthResult> = flow {
+    override fun deleteAccount(currentPassword: String): Flow<AuthResult> = flow {
         emit(AuthResult.Loading)
         val user = firebaseAuth.currentUser
         if (user != null) {
             try {
                 val userId = user.uid
-                
+
                 // First delete user data from Firestore
                 deleteUserDataFromFirestore(userId)
 
-                // Then delete the Firebase Auth account
+                // Then reauthenticate the user with current password
+                /**
+                 * Hassas işlemler yapmadan önce kullanıcının kimliğinin tekrar doğrulanması (reauthentication) güvenlik gereği zorunludur.
+                 * Bu yüzden credentials (kimlik bilgileri) alınıp önce reauthenticate() edilir.
+                 * Change password OAuth için geçerli değildir. Sadece Email&Password girişi yapmış kullanıcılar içindir.
+                 */
+                val credential = EmailAuthProvider.getCredential(user.email ?: "", currentPassword)
+                user.reauthenticate(credential).await()
+
+                // Lastly delete the Firebase Auth account
                 user.delete().await()
                 
                 emit(AuthResult.Success(user = null))
