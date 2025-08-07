@@ -3,6 +3,7 @@ package com.example.firebaseexample.domain.repository
 import androidx.fragment.app.FragmentActivity
 import com.example.firebaseexample.domain.models.AuthResult
 import com.example.firebaseexample.domain.models.User
+import com.google.firebase.auth.PhoneAuthProvider
 import kotlinx.coroutines.flow.Flow
 
 interface AuthRepository {
@@ -17,6 +18,6 @@ interface AuthRepository {
     fun changePassword(currentPassword: String, newPassword: String): Flow<AuthResult>
     fun verifyPhoneNumber(phoneNumber: String, activity: FragmentActivity): Flow<AuthResult>
     fun signInWithPhoneCredential(verificationId: String, smsCode: String): Flow<AuthResult>
-    fun resendVerificationCode(phoneNumber: String, activity: FragmentActivity, resendToken: String): Flow<AuthResult>
+    fun resendVerificationCode(phoneNumber: String, activity: FragmentActivity, resendToken: PhoneAuthProvider.ForceResendingToken): Flow<AuthResult>
     suspend fun reloadCurrentUser()
 } 

@@ -1,5 +1,6 @@
 package com.example.firebaseexample.presentation.auth
 
+import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.firebaseexample.domain.models.AuthResult
@@ -123,9 +124,6 @@ class AuthViewModel @Inject constructor(
                     is AuthResult.CodeSent -> {
                         Timber.w("Unexpected CodeSent result in email sign in")
                     }
-                    is AuthResult.PhoneVerificationCompleted -> {
-                        Timber.w("Unexpected PhoneVerificationCompleted result in email sign in")
-                    }
                 }
             }
         }
@@ -149,9 +147,6 @@ class AuthViewModel @Inject constructor(
                     is AuthResult.CodeSent -> {
                         Timber.w("Unexpected CodeSent result in email sign up")
                     }
-                    is AuthResult.PhoneVerificationCompleted -> {
-                        Timber.w("Unexpected PhoneVerificationCompleted result in email sign up")
-                    }
                 }
             }
         }
@@ -174,9 +169,6 @@ class AuthViewModel @Inject constructor(
                     // These cases should not occur in sign out
                     is AuthResult.CodeSent -> {
                         Timber.w("Unexpected CodeSent result in sign out")
-                    }
-                    is AuthResult.PhoneVerificationCompleted -> {
-                        Timber.w("Unexpected PhoneVerificationCompleted result in sign out")
                     }
                 }
             }
@@ -208,9 +200,6 @@ class AuthViewModel @Inject constructor(
                     is AuthResult.CodeSent -> {
                         Timber.w("Unexpected CodeSent result in password reset")
                     }
-                    is AuthResult.PhoneVerificationCompleted -> {
-                        Timber.w("Unexpected PhoneVerificationCompleted result in password reset")
-                    }
                 }
             }
         }
@@ -237,9 +226,6 @@ class AuthViewModel @Inject constructor(
                     is AuthResult.CodeSent -> {
                         Timber.w("Unexpected CodeSent result in Google sign in")
                     }
-                    is AuthResult.PhoneVerificationCompleted -> {
-                        Timber.w("Unexpected PhoneVerificationCompleted result in Google sign in")
-                    }
                 }
             }
         }
@@ -255,9 +241,6 @@ class AuthViewModel @Inject constructor(
                     // These cases should not occur in email verification
                     is AuthResult.CodeSent -> {
                         Timber.w("Unexpected CodeSent result in email verification")
-                    }
-                    is AuthResult.PhoneVerificationCompleted -> {
-                        Timber.w("Unexpected PhoneVerificationCompleted result in email verification")
                     }
                 }
             }
@@ -291,9 +274,6 @@ class AuthViewModel @Inject constructor(
                     is AuthResult.CodeSent -> {
                         Timber.w("Unexpected CodeSent result in account deletion")
                     }
-                    is AuthResult.PhoneVerificationCompleted -> {
-                        Timber.w("Unexpected PhoneVerificationCompleted result in account deletion")
-                    }
                 }
             }
         }
@@ -323,9 +303,6 @@ class AuthViewModel @Inject constructor(
                     // These cases should not occur in password change
                     is AuthResult.CodeSent -> {
                         Timber.w("Unexpected CodeSent result in password change")
-                    }
-                    is AuthResult.PhoneVerificationCompleted -> {
-                        Timber.w("Unexpected PhoneVerificationCompleted result in password change")
                     }
                 }
             }
@@ -368,7 +345,7 @@ class AuthViewModel @Inject constructor(
         }
     }
 
-    fun verifyPhoneNumberWithActivity(phoneNumber: String, activity: androidx.fragment.app.FragmentActivity) {
+    fun verifyPhoneNumberWithActivity(phoneNumber: String, activity: FragmentActivity) {
         viewModelScope.launch {
             _state.update { 
                 it.copy(
@@ -400,23 +377,23 @@ class AuthViewModel @Inject constructor(
                         // Start countdown timer
                         startVerificationTimer()
                     }
-                    is AuthResult.PhoneVerificationCompleted -> {
+                    is AuthResult.Success -> {
+                        stopTimer()
                         _state.update { 
                             it.copy(
                                 isLoading = false,
                                 user = result.user,
                                 error = null,
-                                successMessage = "Phone verification completed automatically"
+                                successMessage = "Phone sign-in successful",
+                                isPhoneAuthMode = false,
+                                isCodeSent = false
                             )
                         }
-                        Timber.d("Phone verification completed automatically")
+                        Timber.d("Phone verification and sign-in completed successfully")
                     }
                     is AuthResult.Error -> {
                         _state.update { it.copy(isLoading = false, error = result.message) }
                         Timber.e("Phone verification error: ${result.message}")
-                    }
-                    else -> {
-                        // Handle other AuthResult types if needed
                     }
                 }
             }
@@ -463,7 +440,7 @@ class AuthViewModel @Inject constructor(
 
     private fun resendVerificationCode() {
         val currentState = _state.value
-        if (currentState.phoneNumber.isEmpty() || currentState.resendToken.isEmpty()) {
+        if (currentState.phoneNumber.isEmpty() || currentState.resendToken == null) {
             _state.update { it.copy(error = "Cannot resend code - missing phone number or token") }
             return
         }
@@ -472,7 +449,7 @@ class AuthViewModel @Inject constructor(
         _state.update { it.copy(isLoading = true, error = null) }
     }
 
-    fun resendVerificationCodeWithActivity(activity: androidx.fragment.app.FragmentActivity) {
+    fun resendVerificationCodeWithActivity(activity: FragmentActivity) {
         val currentState = _state.value
         viewModelScope.launch {
             // Reset timer and expired state
@@ -483,42 +460,41 @@ class AuthViewModel @Inject constructor(
                     error = null
                 )
             }
-            
-            resendVerificationCodeUseCase(currentState.phoneNumber, activity, currentState.resendToken).collect { result ->
-                when (result) {
-                    is AuthResult.Loading -> _state.update { it.copy(isLoading = true) }
-                    is AuthResult.CodeSent -> {
-                        _state.update { 
-                            it.copy(
-                                isLoading = false,
-                                verificationId = result.verificationId,
-                                resendToken = result.resendToken,
-                                successMessage = "Verification code resent"
-                            )
+            currentState.resendToken?.let { resendToken ->
+                resendVerificationCodeUseCase(currentState.phoneNumber, activity, resendToken).collect { result ->
+                    when (result) {
+                        is AuthResult.Loading -> _state.update { it.copy(isLoading = true) }
+                        is AuthResult.CodeSent -> {
+                            _state.update {
+                                it.copy(
+                                    isLoading = false,
+                                    verificationId = result.verificationId,
+                                    resendToken = result.resendToken,
+                                    successMessage = "Verification code resent"
+                                )
+                            }
+                            Timber.d("SMS verification code resent")
+                            // Start new timer
+                            startVerificationTimer()
                         }
-                        Timber.d("SMS verification code resent")
-                        // Start new timer
-                        startVerificationTimer()
-                    }
-                    is AuthResult.PhoneVerificationCompleted -> {
-                        stopTimer()
-                        _state.update { 
-                            it.copy(
-                                isLoading = false,
-                                user = result.user,
-                                error = null,
-                                successMessage = "Phone verification completed automatically"
-                            )
+                        is AuthResult.Success -> {
+                            stopTimer()
+                            _state.update {
+                                it.copy(
+                                    isLoading = false,
+                                    user = result.user,
+                                    error = null,
+                                    successMessage = "Phone sign-in successful",
+                                    isPhoneAuthMode = false,
+                                    isCodeSent = false
+                                )
+                            }
+                            Timber.d("Resend phone verification and sign-in completed successfully")
                         }
-                        Timber.d("Phone verification completed on resend")
-                    }
-                    is AuthResult.Error -> {
-                        _state.update { it.copy(isLoading = false, error = result.message) }
-                        Timber.e("Resend verification error: ${result.message}")
-                    }
-                    // These cases should not occur in resend verification
-                    is AuthResult.Success -> {
-                        Timber.w("Unexpected Success result in resend verification")
+                        is AuthResult.Error -> {
+                            _state.update { it.copy(isLoading = false, error = result.message) }
+                            Timber.e("Resend verification error: ${result.message}")
+                        }
                     }
                 }
             }
@@ -532,7 +508,7 @@ class AuthViewModel @Inject constructor(
                 isPhoneAuthMode = false,
                 phoneNumber = "",
                 verificationId = "",
-                resendToken = "",
+                resendToken = null,
                 isCodeSent = false,
                 isVerifyingCode = false,
                 remainingTime = 0,

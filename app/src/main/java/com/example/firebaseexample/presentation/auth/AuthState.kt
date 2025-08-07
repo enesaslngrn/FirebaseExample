@@ -1,6 +1,7 @@
 package com.example.firebaseexample.presentation.auth
 
 import com.example.firebaseexample.domain.models.User
+import com.google.firebase.auth.PhoneAuthProvider
 
 data class AuthState(
     val isLoading: Boolean = false,
@@ -14,7 +15,7 @@ data class AuthState(
     val isPhoneAuthMode: Boolean = false,
     val phoneNumber: String = "",
     val verificationId: String = "",
-    val resendToken: String = "",
+    val resendToken: PhoneAuthProvider.ForceResendingToken? = null,
     val isCodeSent: Boolean = false,
     val isVerifyingCode: Boolean = false,
     // Timer states
