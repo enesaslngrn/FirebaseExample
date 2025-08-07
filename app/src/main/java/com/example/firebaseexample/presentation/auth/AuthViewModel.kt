@@ -49,7 +49,7 @@ class AuthViewModel @Inject constructor(
     // Timer management
     private var timerJob: Job? = null
     private companion object {
-        const val VERIFICATION_TIMEOUT_SECONDS = 60
+        const val VERIFICATION_TIMEOUT_SECONDS = 30
     }
 
     init {
@@ -468,7 +468,8 @@ class AuthViewModel @Inject constructor(
                                     isLoading = false,
                                     verificationId = result.verificationId,
                                     resendToken = result.resendToken,
-                                    successMessage = "Verification code resent"
+                                    successMessage = "Verification code resent",
+                                    isCodeSent = true
                                 )
                             }
                             Timber.d("SMS verification code resent")
