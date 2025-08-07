@@ -16,8 +16,7 @@ interface AuthRepository {
     fun sendEmailVerification(): Flow<AuthResult>
     fun deleteAccount(currentPassword: String): Flow<AuthResult>
     fun changePassword(currentPassword: String, newPassword: String): Flow<AuthResult>
-    fun verifyPhoneNumber(phoneNumber: String, activity: FragmentActivity): Flow<AuthResult>
+    fun verifyPhoneNumber(phoneNumber: String, activity: FragmentActivity, resendToken: PhoneAuthProvider.ForceResendingToken? = null): Flow<AuthResult>
     fun signInWithPhoneCredential(verificationId: String, smsCode: String): Flow<AuthResult>
-    fun resendVerificationCode(phoneNumber: String, activity: FragmentActivity, resendToken: PhoneAuthProvider.ForceResendingToken): Flow<AuthResult>
     suspend fun reloadCurrentUser()
 } 

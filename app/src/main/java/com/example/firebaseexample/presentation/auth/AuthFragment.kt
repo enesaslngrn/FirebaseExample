@@ -1,5 +1,6 @@
 package com.example.firebaseexample.presentation.auth
 
+import android.annotation.SuppressLint
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -251,6 +252,7 @@ class AuthFragment : Fragment() {
         }
     }
 
+    @SuppressLint("DefaultLocale")
     private fun updateUI(state: AuthState) {
         binding.progressIndicator.visibility = if (state.isLoading || state.isVerifyingCode) View.VISIBLE else View.GONE
         

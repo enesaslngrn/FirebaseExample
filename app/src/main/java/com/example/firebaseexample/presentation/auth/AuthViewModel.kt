@@ -16,7 +16,6 @@ import com.example.firebaseexample.domain.usecases.ReloadUserUseCase
 import com.example.firebaseexample.domain.usecases.ChangePasswordUseCase
 import com.example.firebaseexample.domain.usecases.VerifyPhoneNumberUseCase
 import com.example.firebaseexample.domain.usecases.SignInWithPhoneUseCase
-import com.example.firebaseexample.domain.usecases.ResendVerificationCodeUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -41,8 +40,7 @@ class AuthViewModel @Inject constructor(
     private val reloadUserUseCase: ReloadUserUseCase,
     private val changePasswordUseCase: ChangePasswordUseCase,
     private val verifyPhoneNumberUseCase: VerifyPhoneNumberUseCase,
-    private val signInWithPhoneUseCase: SignInWithPhoneUseCase,
-    private val resendVerificationCodeUseCase: ResendVerificationCodeUseCase
+    private val signInWithPhoneUseCase: SignInWithPhoneUseCase
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(AuthState())
@@ -461,11 +459,11 @@ class AuthViewModel @Inject constructor(
                 )
             }
             currentState.resendToken?.let { resendToken ->
-                resendVerificationCodeUseCase(currentState.phoneNumber, activity, resendToken).collect { result ->
+                verifyPhoneNumberUseCase(currentState.phoneNumber, activity, resendToken).collect { result ->
                     when (result) {
                         is AuthResult.Loading -> _state.update { it.copy(isLoading = true) }
                         is AuthResult.CodeSent -> {
-                            _state.update {
+                            _state.update { 
                                 it.copy(
                                     isLoading = false,
                                     verificationId = result.verificationId,
