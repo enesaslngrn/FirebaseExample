@@ -183,20 +183,20 @@ class AuthRepositoryImpl @Inject constructor(
             try {
                 val userId = user.uid
 
-                // First delete user data from Firestore
-                deleteUserDataFromFirestore(userId)
-
-                // Then reauthenticate the user with current password
+                // First reauthenticate the user with current password
                 /**
                  * Hassas işlemler yapmadan önce kullanıcının kimliğinin tekrar doğrulanması (reauthentication) güvenlik gereği zorunludur.
                  * Bu yüzden credentials (kimlik bilgileri) alınıp önce reauthenticate() edilir.
-                 * Change password OAuth için geçerli değildir. Sadece Email&Password girişi yapmış kullanıcılar içindir.
+                 * Delete Account OAuth için geçerli değildir. Sadece Email&Password girişi yapmış kullanıcılar içindir.
                  */
                 val credential = EmailAuthProvider.getCredential(user.email ?: "", currentPassword)
                 user.reauthenticate(credential).await()
 
-                // Lastly delete the Firebase Auth account
+                // Then delete the Firebase Auth account
                 user.delete().await()
+
+                // Lastly delete user data from Firestore -> En son bu adım gerçekleşmeli. Çünkü Account delete işlemi başarısız olabilir.
+                deleteUserDataFromFirestore(userId)
                 
                 emit(AuthResult.Success(user = null))
                 Timber.d("Account deleted successfully")
