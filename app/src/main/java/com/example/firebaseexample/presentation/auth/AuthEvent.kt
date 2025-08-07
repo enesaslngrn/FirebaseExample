@@ -11,4 +11,14 @@ sealed class AuthEvent {
     data object ClearSuccessMessage : AuthEvent()
     data class DeleteAccount(val currentPassword: String) : AuthEvent()
     data class ChangePassword(val currentPassword: String, val newPassword: String) : AuthEvent()
+    // Phone Auth events
+    data object TogglePhoneAuthMode : AuthEvent()
+    data class VerifyPhoneNumber(val phoneNumber: String) : AuthEvent()
+    data class VerifySmsCode(val smsCode: String) : AuthEvent()
+    data object ResendVerificationCode : AuthEvent()
+    data object ClearPhoneAuthState : AuthEvent()
+    // Timer events
+    data object StartTimer : AuthEvent()
+    data object TimeoutExpired : AuthEvent()
+    data object StopTimer : AuthEvent()
 } 

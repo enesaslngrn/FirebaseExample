@@ -1,12 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
-<com.google.android.material.textfield.TextInputLayout
-    xmlns:android="http://schemas.android.com/apk/res/android"
-    android:id="@+id/textInputLayoutCurrentPassword"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:padding="@dimen/spacing_24"
-    android:hint="@string/current_password"
-    style="@style/Widget.Material3.TextInputLayout.OutlinedBox">
+    android:orientation="vertical"
+    android:padding="@dimen/spacing_24">
+
+    <com.google.android.material.textfield.TextInputLayout
+        android:id="@+id/textInputLayoutCurrentPassword"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="@string/current_password"
+        style="@style/Widget.Material3.TextInputLayout.OutlinedBox">
 
         <com.google.android.material.textfield.TextInputEditText
             android:id="@+id/editTextCurrentPassword"
@@ -16,3 +20,5 @@
             android:maxLines="1" />
 
     </com.google.android.material.textfield.TextInputLayout>
+
+</LinearLayout>

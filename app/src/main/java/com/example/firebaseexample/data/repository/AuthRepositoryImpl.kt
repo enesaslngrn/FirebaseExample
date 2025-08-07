@@ -1,9 +1,11 @@
 package com.example.firebaseexample.data.repository
 
+import androidx.fragment.app.FragmentActivity
 import com.example.firebaseexample.domain.models.AuthResult
 import com.example.firebaseexample.domain.models.User
 import com.example.firebaseexample.domain.repository.AuthRepository
 import com.example.firebaseexample.data.models.UserDto
+import com.google.firebase.FirebaseException
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseAuthInvalidCredentialsException
 import com.google.firebase.auth.FirebaseAuthInvalidUserException
@@ -11,6 +13,9 @@ import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.auth.GoogleAuthProvider
 import com.google.firebase.auth.EmailAuthProvider
 import com.google.firebase.auth.FirebaseAuthRecentLoginRequiredException
+import com.google.firebase.auth.PhoneAuthProvider
+import com.google.firebase.auth.PhoneAuthCredential
+import com.google.firebase.auth.PhoneAuthOptions
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
@@ -18,7 +23,9 @@ import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.tasks.await
 import timber.log.Timber
+import java.util.concurrent.TimeUnit
 import javax.inject.Inject
+import kotlinx.coroutines.launch
 
 class AuthRepositoryImpl @Inject constructor(
     private val firebaseAuth: FirebaseAuth,
@@ -263,6 +270,165 @@ class AuthRepositoryImpl @Inject constructor(
 
     override suspend fun reloadCurrentUser() {
         firebaseAuth.currentUser?.reload()?.await()
+    }
+
+    override fun verifyPhoneNumber(
+        phoneNumber: String, 
+        activity: FragmentActivity
+    ): Flow<AuthResult> = callbackFlow {
+        trySend(AuthResult.Loading)
+        
+        // Configure test phone numbers for development
+        if (phoneNumber == "+905537414070") {
+            Timber.d("Test phone number detected - will send verification code for manual entry")
+            // Disable app verification for testing to force manual code entry
+            firebaseAuth.firebaseAuthSettings.setAppVerificationDisabledForTesting(true)
+            Timber.d("App verification disabled for testing")
+        }
+        
+        val callbacks = object : PhoneAuthProvider.OnVerificationStateChangedCallbacks() {
+            override fun onVerificationCompleted(credential: PhoneAuthCredential) {
+                // For test numbers, we want to skip auto-verification and force manual code entry
+                if (phoneNumber == "+905537414070") {
+                    Timber.d("Auto-verification skipped for test number - waiting for manual code entry")
+                    return
+                }
+                
+                // For real numbers, allow auto-verification
+                Timber.d("Phone verification completed automatically")
+                // Use coroutine instead of callback
+                launch {
+                    try {
+                        val result = firebaseAuth.signInWithCredential(credential).await()
+                        result.user?.let { user ->
+                            trySend(AuthResult.PhoneVerificationCompleted(user.toUserDto().toDomain()))
+                        } ?: trySend(AuthResult.Error("Phone sign in failed"))
+                    } catch (e: Exception) {
+                        trySend(AuthResult.Error(e.message ?: "Phone sign in failed"))
+                    }
+                    close()
+                }
+            }
+
+            override fun onVerificationFailed(p0: FirebaseException) {
+                Timber.e(p0, "Phone verification failed")
+                trySend(AuthResult.Error(p0.message ?: "Phone verification failed"))
+                close()
+            }
+
+            override fun onCodeSent(
+                verificationId: String,
+                token: PhoneAuthProvider.ForceResendingToken
+            ) {
+                Timber.d("Verification code sent to $phoneNumber")
+                if (phoneNumber == "+905537414070") {
+                    Timber.d("Test phone number - use verification code: 123456")
+                }
+                trySend(AuthResult.CodeSent(verificationId, token.toString()))
+            }
+
+            override fun onCodeAutoRetrievalTimeOut(verificationId: String) {
+                Timber.d("Code auto-retrieval timeout for verification ID: $verificationId")
+                // SMS geldikten sonra, sistemin otomatik doldurması için belirlenen timeout süresi.
+                // This is called when the timeout expires and auto-retrieval is no longer possible
+                // The user must manually enter the verification code
+            }
+        }
+
+        val options = PhoneAuthOptions.newBuilder(firebaseAuth)
+            .setPhoneNumber(phoneNumber)
+            .setTimeout(60L, TimeUnit.SECONDS)
+            .setActivity(activity)
+            .setCallbacks(callbacks)
+            .build()
+            
+        PhoneAuthProvider.verifyPhoneNumber(options)
+        
+        awaitClose { /* cleanup if needed */ }
+    }
+
+    override fun signInWithPhoneCredential(
+        verificationId: String, 
+        smsCode: String
+    ): Flow<AuthResult> = flow {
+        emit(AuthResult.Loading)
+        try {
+            val credential = PhoneAuthProvider.getCredential(verificationId, smsCode)
+            val result = firebaseAuth.signInWithCredential(credential).await()
+            result.user?.let { user ->
+                emit(AuthResult.Success(user.toUserDto().toDomain()))
+            } ?: emit(AuthResult.Error("Phone sign in failed"))
+        } catch (e: FirebaseAuthInvalidCredentialsException) {
+            emit(AuthResult.Error("Invalid verification code"))
+        } catch (e: Exception) {
+            Timber.e(e, "Phone sign in error")
+            emit(AuthResult.Error(e.message ?: "Phone sign in failed"))
+        }
+    }
+
+    override fun resendVerificationCode(
+        phoneNumber: String,
+        activity: FragmentActivity,
+        resendToken: String
+    ): Flow<AuthResult> = callbackFlow {
+        trySend(AuthResult.Loading)
+        
+        val callbacks = object : PhoneAuthProvider.OnVerificationStateChangedCallbacks() {
+            override fun onVerificationCompleted(credential: PhoneAuthCredential) {
+                if (phoneNumber == "+905537414070") {
+                    Timber.d("Auto-verification skipped for test number on resend")
+                    return
+                }
+                
+                Timber.d("Phone verification completed on resend")
+                // Use coroutine instead of callback
+                launch {
+                    try {
+                        val result = firebaseAuth.signInWithCredential(credential).await()
+                        result.user?.let { user ->
+                            trySend(AuthResult.PhoneVerificationCompleted(user.toUserDto().toDomain()))
+                        } ?: trySend(AuthResult.Error("Phone sign in failed"))
+                    } catch (e: Exception) {
+                        trySend(AuthResult.Error(e.message ?: "Phone sign in failed"))
+                    }
+                    close()
+                }
+            }
+
+            override fun onVerificationFailed(p0: FirebaseException) {
+                Timber.e(p0, "Phone verification failed on resend")
+                trySend(AuthResult.Error(p0.message ?: "Failed to resend verification code"))
+                close()
+            }
+
+            override fun onCodeSent(
+                verificationId: String,
+                token: PhoneAuthProvider.ForceResendingToken
+            ) {
+                Timber.d("Verification code resent to $phoneNumber")
+                if (phoneNumber == "+905537414070") {
+                    Timber.d("Test phone number - use verification code: 123456")
+                }
+                trySend(AuthResult.CodeSent(verificationId, token.toString()))
+            }
+
+            override fun onCodeAutoRetrievalTimeOut(verificationId: String) {
+                Timber.d("Code auto-retrieval timeout on resend for verification ID: $verificationId")
+            }
+        }
+
+        // For resend, we need to use the ForceResendingToken
+        // In a real implementation, you'd store the actual token object
+        val options = PhoneAuthOptions.newBuilder(firebaseAuth)
+            .setPhoneNumber(phoneNumber)
+            .setTimeout(60L, TimeUnit.SECONDS)
+            .setActivity(activity)
+            .setCallbacks(callbacks)
+            .build()
+            
+        PhoneAuthProvider.verifyPhoneNumber(options)
+        
+        awaitClose { /* cleanup if needed */ }
     }
 
     private fun FirebaseUser.toUserDto(): UserDto {
