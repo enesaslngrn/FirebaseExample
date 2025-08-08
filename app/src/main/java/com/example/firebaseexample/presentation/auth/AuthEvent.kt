@@ -9,7 +9,7 @@ sealed class AuthEvent {
     data object SendEmailVerification : AuthEvent()
     data object ClearError : AuthEvent()
     data object ClearSuccessMessage : AuthEvent()
-    data class DeleteAccount(val currentPassword: String) : AuthEvent()
+    data class DeleteAccount(val currentPassword: String? = null) : AuthEvent()
     data class ChangePassword(val currentPassword: String, val newPassword: String) : AuthEvent()
     // Phone Auth events
     data object TogglePhoneAuthMode : AuthEvent()

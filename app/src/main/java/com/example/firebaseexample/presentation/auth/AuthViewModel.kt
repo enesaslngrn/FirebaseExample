@@ -245,7 +245,7 @@ class AuthViewModel @Inject constructor(
         }
     }
 
-    private fun deleteAccount(currentPassword: String) {
+    private fun deleteAccount(currentPassword: String?) {
         viewModelScope.launch {
             _state.update { it.copy(isLoading = true, error = null, successMessage = null) }
             

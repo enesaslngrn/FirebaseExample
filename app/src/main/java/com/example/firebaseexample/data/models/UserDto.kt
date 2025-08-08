@@ -7,7 +7,8 @@ data class UserDto(
     val email: String,
     val displayName: String?,
     val photoUrl: String?,
-    val isEmailVerified: Boolean?
+    val isEmailVerified: Boolean?,
+    val providers: List<String> = emptyList()
 ) {
     fun toDomain(): User {
         return User(
@@ -15,7 +16,8 @@ data class UserDto(
             email = email,
             displayName = displayName,
             photoUrl = photoUrl,
-            isEmailVerified = isEmailVerified
+            isEmailVerified = isEmailVerified,
+            providers = providers
         )
     }
     
@@ -26,7 +28,8 @@ data class UserDto(
                 email = user.email,
                 displayName = user.displayName,
                 photoUrl = user.photoUrl,
-                isEmailVerified = user.isEmailVerified
+                isEmailVerified = user.isEmailVerified,
+                providers = user.providers
             )
         }
     }

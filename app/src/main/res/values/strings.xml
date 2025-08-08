@@ -80,5 +80,6 @@
     <string name="delete_account">Delete Account</string>
     <string name="delete_account_title">Delete Account</string>
     <string name="delete_account_message">Are you sure you want to delete your account? \nEnter your password:</string>
+    <string name="delete_google_account_message">Are you sure you want to delete your account? \n\nThis action cannot be undone and will permanently delete all your data.</string>
 
 </resources>

@@ -176,35 +176,50 @@ class AuthRepositoryImpl @Inject constructor(
         }
     }
 
-    override fun deleteAccount(currentPassword: String): Flow<AuthResult> = flow {
+    override fun deleteAccount(currentPassword: String?): Flow<AuthResult> = flow {
         emit(AuthResult.Loading)
         val user = firebaseAuth.currentUser
         if (user != null) {
             try {
                 val userId = user.uid
+                val userProviders = user.providerData.map { it.providerId }
 
-                // First reauthenticate the user with current password
-                /**
-                 * Hassas işlemler yapmadan önce kullanıcının kimliğinin tekrar doğrulanması (reauthentication) güvenlik gereği zorunludur.
-                 * Bu yüzden credentials (kimlik bilgileri) alınıp önce reauthenticate() edilir.
-                 * Delete Account OAuth için geçerli değildir. Sadece Email&Password girişi yapmış kullanıcılar içindir.
-                 */
-                val credential = EmailAuthProvider.getCredential(user.email ?: "", currentPassword)
-                user.reauthenticate(credential).await()
-
-                // Then delete the Firebase Auth account
-                user.delete().await()
-
-                // Lastly delete user data from Firestore -> En son bu adım gerçekleşmeli. Çünkü Account delete işlemi başarısız olabilir.
+                // Reauthenticate based on provider
+                if (userProviders.contains("google.com")) {
+                    Timber.d("Google user detected, proceeding with account deletion")
+                } else if (userProviders.contains("phone")){
+                    Timber.d("Phone user detected, proceeding with account deletion")
+                } else if (userProviders.contains("password") && currentPassword != null) {
+                    // Email/Password user reauthentication
+                    val credential = EmailAuthProvider.getCredential(user.email ?: "", currentPassword)
+                    user.reauthenticate(credential).await()
+                    Timber.d("Email/Password user reauthenticated successfully")
+                } else {
+                    emit(AuthResult.Error("Invalid authentication method or missing credentials"))
+                    return@flow
+                }
+                // Then delete user data from Firestore
                 deleteUserDataFromFirestore(userId)
-                
+
+                // Delete the Firebase Auth account first
+                user.delete().await()
+                Timber.d("Firebase Auth account deleted successfully")
+
                 emit(AuthResult.Success(user = null))
-                Timber.d("Account deleted successfully")
+                Timber.d("Account and user data deleted successfully")
             } catch (e: Exception) {
                 Timber.e(e, "Account deletion error")
                 when (e) {
                     is FirebaseAuthRecentLoginRequiredException -> {
-                        emit(AuthResult.Error("This operation is sensitive and requires recent authentication."))
+                        val userProviders = user.providerData.map { it.providerId }
+                        if (userProviders.contains("google.com")) {
+                            emit(AuthResult.Error("This operation requires recent authentication. Please sign out and sign in again with Google, then try deleting your account."))
+                        } else {
+                            emit(AuthResult.Error("This operation requires recent authentication. Please sign in again and try again."))
+                        }
+                    }
+                    is FirebaseAuthInvalidCredentialsException -> {
+                        emit(AuthResult.Error("Invalid credentials provided"))
                     }
                     else -> {
                         emit(AuthResult.Error(e.message ?: "Failed to delete account"))
@@ -254,6 +269,7 @@ class AuthRepositoryImpl @Inject constructor(
 
     private suspend fun deleteUserDataFromFirestore(userId: String) {
         try {
+            // Delete user's notes collection
             val notesCollection = firestore.collection("users").document(userId).collection("notes")
             val notesSnapshot = notesCollection.get().await()
 
@@ -266,7 +282,8 @@ class AuthRepositoryImpl @Inject constructor(
                 }
             }
         } catch (e: Exception) {
-            Timber.w(e, "Error accessing user data in Firestore, but continuing with account deletion")
+            Timber.w(e, "Error deleting user data from Firestore: ${e.message}")
+            // Don't throw the exception as the main account deletion was successful
         }
     }
 
@@ -399,7 +416,8 @@ class AuthRepositoryImpl @Inject constructor(
             email = email ?: "",
             displayName = displayName,
             photoUrl = photoUrl?.toString(),
-            isEmailVerified = isEmailVerified
+            isEmailVerified = isEmailVerified,
+            providers = providerData.map { it.providerId }
         )
     }
 } 

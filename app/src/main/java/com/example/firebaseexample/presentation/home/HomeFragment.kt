@@ -69,21 +69,37 @@ class HomeFragment : Fragment() {
     }
 
     private fun showDeleteAccountConfirmationDialog() {
-        val dialogBinding: DialogDeleteAccountBinding = DialogDeleteAccountBinding.inflate(layoutInflater)
-        MaterialAlertDialogBuilder(requireContext())
-            .setTitle(getString(R.string.delete_account_title))
-            .setMessage(getString(R.string.delete_account_message))
-            .setView(dialogBinding.root)
-            .setPositiveButton(getString(R.string.delete)) { _, _ ->
-                val currentPassword: String = dialogBinding.editTextCurrentPassword.text.toString().trim()
-                if (currentPassword.isNotEmpty()){
-                    authViewModel.onEvent(AuthEvent.DeleteAccount(currentPassword))
-                } else {
-                    showSnackbar(getString(R.string.please_enter_current_password))
+        val currentUser = authViewModel.state.value.user
+        
+        if (currentUser?.isGoogleUser() == true || currentUser?.isPhoneUser() == true) {
+            // For Google users, show simple confirmation dialog without password input
+            MaterialAlertDialogBuilder(requireContext())
+                .setTitle(getString(R.string.delete_account_title))
+                .setMessage(getString(R.string.delete_google_account_message))
+                .setPositiveButton(getString(R.string.delete)) { _, _ ->
+                    // For Google users, pass null as password
+                    authViewModel.onEvent(AuthEvent.DeleteAccount())
                 }
-            }
-            .setNegativeButton(getString(R.string.cancel), null)
-            .show()
+                .setNegativeButton(getString(R.string.cancel), null)
+                .show()
+        } else {
+            // For email/password users, show password input dialog
+            val dialogBinding: DialogDeleteAccountBinding = DialogDeleteAccountBinding.inflate(layoutInflater)
+            MaterialAlertDialogBuilder(requireContext())
+                .setTitle(getString(R.string.delete_account_title))
+                .setMessage(getString(R.string.delete_account_message))
+                .setView(dialogBinding.root)
+                .setPositiveButton(getString(R.string.delete)) { _, _ ->
+                    val currentPassword: String = dialogBinding.editTextCurrentPassword.text.toString().trim()
+                    if (currentPassword.isNotEmpty()){
+                        authViewModel.onEvent(AuthEvent.DeleteAccount(currentPassword = currentPassword))
+                    } else {
+                        showSnackbar(getString(R.string.please_enter_current_password))
+                    }
+                }
+                .setNegativeButton(getString(R.string.cancel), null)
+                .show()
+        }
     }
 
     private fun showChangePasswordDialog() {
@@ -167,6 +183,10 @@ class HomeFragment : Fragment() {
                 binding.verifiedTextView.isVisible = it
                 binding.sendVerificationButton.isVisible = !it
             }
+            
+            // Hide change password button for Google users
+            binding.changePasswordButton.isVisible = user.isEmailPasswordUser()
+            
             Timber.d("User info displayed: ${user.email}")
         }
 
