@@ -2,6 +2,7 @@ package com.example.firebaseexample.presentation.notes
 
 import android.os.Bundle
 import android.view.LayoutInflater
+import android.view.MenuItem
 import android.view.View
 import android.view.ViewGroup
 import androidx.core.view.isVisible
@@ -45,6 +46,7 @@ class NotesFragment : Fragment() {
         super.onViewCreated(view, savedInstanceState)
         setupRecyclerView()
         setupClickListeners()
+        setupToolbars()
         observeAuthState()
         observeNoteState()
     }
@@ -55,7 +57,12 @@ class NotesFragment : Fragment() {
                 showAddEditNoteDialog(note)
             },
             onNoteLongClick = { note ->
-                showDeleteNoteDialog(note)
+                if (!noteViewModel.state.value.isSelectionMode) {
+                    showDeleteNoteDialog(note)
+                }
+            },
+            onNoteSelectionChanged = { note, isSelected ->
+                noteViewModel.onEvent(NoteEvent.ToggleNoteSelection(note))
             }
         )
 
@@ -68,6 +75,58 @@ class NotesFragment : Fragment() {
     private fun setupClickListeners() {
         binding.fabAddNote.setOnClickListener {
             showAddEditNoteDialog()
+        }
+    }
+
+    private fun setupToolbars() {
+        // Normal toolbar menu
+        binding.toolbar.setOnMenuItemClickListener { menuItem ->
+            handleToolbarMenuClick(menuItem)
+        }
+
+        // Selection toolbar
+        binding.toolbarSelection.setNavigationOnClickListener {
+            noteViewModel.onEvent(NoteEvent.ExitSelectionMode)
+        }
+
+        binding.toolbarSelection.setOnMenuItemClickListener { menuItem ->
+            handleSelectionMenuClick(menuItem)
+        }
+    }
+
+    private fun handleToolbarMenuClick(menuItem: MenuItem): Boolean {
+        return when (menuItem.itemId) {
+            R.id.action_select_notes -> {
+                noteViewModel.onEvent(NoteEvent.EnterSelectionMode)
+                true
+            }
+            R.id.action_delete_all -> {
+                showDeleteAllNotesDialog()
+                true
+            }
+            else -> false
+        }
+    }
+
+    private fun handleSelectionMenuClick(menuItem: MenuItem): Boolean {
+        val state = noteViewModel.state.value
+        return when (menuItem.itemId) {
+            R.id.action_delete_selected -> {
+                if (state.selectedNotes.isNotEmpty()) {
+                    showDeleteSelectedNotesDialog(state.selectedNotes)
+                }
+                true
+            }
+            R.id.action_select_all -> {
+                // Select all notes
+                state.notes.forEach { note ->
+                    if (!state.selectedNotes.contains(note)) {
+                        noteViewModel.onEvent(NoteEvent.ToggleNoteSelection(note))
+                    }
+                }
+                true
+            }
+            else -> false
         }
     }
 
@@ -98,9 +157,21 @@ class NotesFragment : Fragment() {
             progressIndicator.isVisible = state.isLoading
             textViewEmptyState.isVisible = state.notes.isEmpty() && state.isInitialized && !state.isLoading
             recyclerViewNotes.isVisible = state.notes.isNotEmpty()
+
+            // Selection mode UI
+            toolbar.isVisible = !state.isSelectionMode
+            toolbarSelection.isVisible = state.isSelectionMode
+            fabAddNote.isVisible = !state.isSelectionMode
+
+            if (state.isSelectionMode) {
+                toolbarSelection.title = getString(R.string.selected_count, state.selectedNotes.size)
+            }
         }
 
+        // Update adapter
         notesAdapter.submitList(state.notes)
+        notesAdapter.setSelectionMode(state.isSelectionMode)
+        notesAdapter.updateSelectedNotes(state.selectedNotes)
 
         state.error?.let { error ->
             showSnackbar(error)
@@ -156,6 +227,29 @@ class NotesFragment : Fragment() {
             .setMessage(getString(R.string.delete_note_confirmation, note.title))
             .setPositiveButton(getString(R.string.delete)) { _, _ ->
                 noteViewModel.onEvent(NoteEvent.DeleteNote(note.id))
+            }
+            .setNegativeButton(getString(R.string.cancel), null)
+            .show()
+    }
+
+    private fun showDeleteAllNotesDialog() {
+        MaterialAlertDialogBuilder(requireContext())
+            .setTitle(getString(R.string.delete_all_notes))
+            .setMessage(getString(R.string.delete_all_confirmation))
+            .setPositiveButton(getString(R.string.delete)) { _, _ ->
+                noteViewModel.onEvent(NoteEvent.DeleteAllNotes)
+            }
+            .setNegativeButton(getString(R.string.cancel), null)
+            .show()
+    }
+
+    private fun showDeleteSelectedNotesDialog(selectedNotes: List<Note>) {
+        MaterialAlertDialogBuilder(requireContext())
+            .setTitle(getString(R.string.delete_selected))
+            .setMessage(getString(R.string.delete_selected_confirmation, selectedNotes.size))
+            .setPositiveButton(getString(R.string.delete)) { _, _ ->
+                val noteIds = selectedNotes.map { it.id }
+                noteViewModel.onEvent(NoteEvent.DeleteSelectedNotes(noteIds))
             }
             .setNegativeButton(getString(R.string.cancel), null)
             .show()

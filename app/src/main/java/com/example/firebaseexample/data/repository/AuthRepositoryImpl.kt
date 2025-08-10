@@ -333,7 +333,6 @@ class AuthRepositoryImpl @Inject constructor(
                     close()
                 }
             }
-
             override fun onVerificationFailed(p0: FirebaseException) {
                 Timber.e(p0, "Phone verification failed")
                 when (p0) {
@@ -352,7 +351,6 @@ class AuthRepositoryImpl @Inject constructor(
                 }
                 close()
             }
-
             override fun onCodeSent(
                 verificationId: String,
                 token: PhoneAuthProvider.ForceResendingToken

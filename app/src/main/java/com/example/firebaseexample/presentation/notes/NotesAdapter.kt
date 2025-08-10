@@ -2,6 +2,7 @@ package com.example.firebaseexample.presentation.notes
 
 import android.view.LayoutInflater
 import android.view.ViewGroup
+import androidx.core.view.isVisible
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
@@ -13,8 +14,22 @@ import java.util.Locale
 
 class NotesAdapter(
     private val onNoteClick: (Note) -> Unit,
-    private val onNoteLongClick: (Note) -> Unit
+    private val onNoteLongClick: (Note) -> Unit,
+    private val onNoteSelectionChanged: (Note, Boolean) -> Unit
 ) : ListAdapter<Note, NotesAdapter.NoteViewHolder>(NoteDiffCallback()) {
+
+    private var isSelectionMode = false
+    private var selectedNotes = setOf<String>()
+
+    fun setSelectionMode(enabled: Boolean) {
+        isSelectionMode = enabled
+        notifyDataSetChanged()
+    }
+
+    fun updateSelectedNotes(selectedNotes: List<Note>) {
+        this.selectedNotes = selectedNotes.map { it.id }.toSet()
+        notifyDataSetChanged()
+    }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): NoteViewHolder {
         val binding: ItemNoteBinding = ItemNoteBinding.inflate(
@@ -39,14 +54,36 @@ class NotesAdapter(
                 textViewContent.text = note.content
                 textViewTimestamp.text = formatTimestamp(note.timestamp)
 
-                root.setOnClickListener {
-                    onNoteClick(note)
+                // Selection mode visibility
+                checkBoxSelection.isVisible = isSelectionMode
+                checkBoxSelection.isChecked = selectedNotes.contains(note.id)
+
+                // Click listeners
+                if (isSelectionMode) {
+                    root.setOnClickListener {
+                        val isCurrentlySelected = selectedNotes.contains(note.id)
+                        onNoteSelectionChanged(note, !isCurrentlySelected)
+                    }
+                    
+                    checkBoxSelection.setOnClickListener {
+                        onNoteSelectionChanged(note, checkBoxSelection.isChecked)
+                    }
+                } else {
+                    root.setOnClickListener {
+                        onNoteClick(note)
+                    }
                 }
 
                 root.setOnLongClickListener {
-                    onNoteLongClick(note)
+                    if (!isSelectionMode) {
+                        onNoteLongClick(note)
+                    }
                     true
                 }
+
+                // Visual feedback for selected items
+                val alpha = if (isSelectionMode && selectedNotes.contains(note.id)) 0.7f else 1.0f
+                root.alpha = alpha
             }
         }
 
@@ -57,12 +94,13 @@ class NotesAdapter(
     }
 
     private class NoteDiffCallback : DiffUtil.ItemCallback<Note>() {
-        override fun areItemsTheSame(oldItem: Note, newItem: Note): Boolean {
-            return oldItem.id == newItem.id
-        }
 
         override fun areContentsTheSame(oldItem: Note, newItem: Note): Boolean {
             return oldItem == newItem
+        }
+
+        override fun areItemsTheSame(oldItem: Note, newItem: Note): Boolean {
+            return oldItem.id == newItem.id
         }
     }
 } 

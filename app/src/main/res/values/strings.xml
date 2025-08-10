@@ -69,6 +69,15 @@
     <string name="delete">Delete</string>
     <string name="cancel">Cancel</string>
     
+    <!-- Selection Mode -->
+    <string name="select_notes">Select Notes</string>
+    <string name="select_all">Select All</string>
+    <string name="delete_selected">Delete Selected</string>
+    <string name="delete_all_notes">Delete All Notes</string>
+    <string name="selected_count">%d selected</string>
+    <string name="delete_selected_confirmation">Are you sure you want to delete %d selected note(s)?</string>
+    <string name="delete_all_confirmation">Are you sure you want to delete all notes? This action cannot be undone.</string>
+    
     <!-- Splash Screen -->
     <string name="force_update_title">Update Required</string>
     <string name="force_update_message">A new version of the app is required. Please update to continue using the app.</string>

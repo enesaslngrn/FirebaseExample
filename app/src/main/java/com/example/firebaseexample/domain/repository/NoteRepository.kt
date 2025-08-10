@@ -8,5 +8,7 @@ interface NoteRepository {
     fun addNote(userId: String, note: Note): Flow<Result<Unit>>
     fun updateNote(userId: String, note: Note): Flow<Result<Unit>>
     fun deleteNote(userId: String, noteId: String): Flow<Result<Unit>>
+    fun deleteAll(userId: String): Flow<Result<Unit>>
+    fun deleteSelectedNotes(userId: String, noteIds: List<String>): Flow<Result<Unit>>
     fun getNote(userId: String, noteId: String): Flow<Note?>
 } 

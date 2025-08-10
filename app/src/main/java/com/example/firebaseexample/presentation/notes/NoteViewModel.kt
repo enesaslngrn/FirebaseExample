@@ -4,7 +4,9 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.firebaseexample.domain.models.Note
 import com.example.firebaseexample.domain.usecases.AddNoteUseCase
+import com.example.firebaseexample.domain.usecases.DeleteAllNotesUseCase
 import com.example.firebaseexample.domain.usecases.DeleteNoteUseCase
+import com.example.firebaseexample.domain.usecases.DeleteSelectedNotesUseCase
 import com.example.firebaseexample.domain.usecases.GetNotesUseCase
 import com.example.firebaseexample.domain.usecases.UpdateNoteUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -21,7 +23,9 @@ class NoteViewModel @Inject constructor(
     private val getNotesUseCase: GetNotesUseCase,
     private val addNoteUseCase: AddNoteUseCase,
     private val updateNoteUseCase: UpdateNoteUseCase,
-    private val deleteNoteUseCase: DeleteNoteUseCase
+    private val deleteNoteUseCase: DeleteNoteUseCase,
+    private val deleteAllNotesUseCase: DeleteAllNotesUseCase,
+    private val deleteSelectedNotesUseCase: DeleteSelectedNotesUseCase
 ) : ViewModel() {
 
     private val _state: MutableStateFlow<NoteState> = MutableStateFlow(NoteState())
@@ -40,8 +44,14 @@ class NoteViewModel @Inject constructor(
             is NoteEvent.AddNote -> addNote(event.title, event.content)
             is NoteEvent.UpdateNote -> updateNote(event.note)
             is NoteEvent.DeleteNote -> deleteNote(event.noteId)
+            is NoteEvent.DeleteAllNotes -> deleteAllNotes()
+            is NoteEvent.DeleteSelectedNotes -> deleteSelectedNotes(event.noteIds)
             is NoteEvent.SelectNote -> selectNote(event.note)
+            is NoteEvent.ToggleNoteSelection -> toggleNoteSelection(event.note)
             is NoteEvent.ClearSelectedNote -> clearSelectedNote()
+            is NoteEvent.ClearSelectedNotes -> clearSelectedNotes()
+            is NoteEvent.EnterSelectionMode -> enterSelectionMode()
+            is NoteEvent.ExitSelectionMode -> exitSelectionMode()
             is NoteEvent.ClearError -> clearError()
             is NoteEvent.ClearSuccessMessage -> clearSuccessMessage()
         }
@@ -169,6 +179,110 @@ class NoteViewModel @Inject constructor(
                 }
             }
         }
+    }
+
+    private fun deleteAllNotes() {
+        val uid: String = userId ?: return
+        _state.update { it.copy(isLoading = true) }
+        
+        viewModelScope.launch {
+            deleteAllNotesUseCase(uid).collect { result ->
+                result.onSuccess {
+                    _state.update { 
+                        it.copy(
+                            isLoading = false,
+                            selectedNotes = emptyList(),
+                            isSelectionMode = false,
+                            successMessage = "All notes deleted successfully"
+                        ) 
+                    }
+                    Timber.d("Successfully deleted all notes")
+                }.onFailure { exception ->
+                    Timber.e(exception, "Error deleting all notes")
+                    _state.update { 
+                        it.copy(
+                            error = "Failed to delete all notes",
+                            isLoading = false
+                        ) 
+                    }
+                }
+            }
+        }
+    }
+
+    private fun deleteSelectedNotes(noteIds: List<String>) {
+        val uid: String = userId ?: return
+        
+        if (noteIds.isEmpty()) {
+            Timber.w("No notes selected for deletion")
+            return
+        }
+        
+        _state.update { it.copy(isLoading = true) }
+        
+        viewModelScope.launch {
+            deleteSelectedNotesUseCase(uid, noteIds).collect { result ->
+                result.onSuccess {
+                    val deletedCount = noteIds.size
+                    _state.update { 
+                        it.copy(
+                            isLoading = false,
+                            selectedNotes = emptyList(),
+                            isSelectionMode = false,
+                            successMessage = if (deletedCount == 1) {
+                                "Note deleted successfully"
+                            } else {
+                                "$deletedCount notes deleted successfully"
+                            }
+                        ) 
+                    }
+                    Timber.d("Successfully deleted $deletedCount selected notes")
+                }.onFailure { exception ->
+                    Timber.e(exception, "Error deleting selected notes")
+                    _state.update { 
+                        it.copy(
+                            error = "Failed to delete selected notes",
+                            isLoading = false
+                        ) 
+                    }
+                }
+            }
+        }
+    }
+
+    private fun toggleNoteSelection(note: Note) {
+        _state.update { currentState ->
+            val currentlySelected = currentState.selectedNotes
+            val isAlreadySelected = currentlySelected.any { it.id == note.id }
+            
+            val newSelectedNotes = if (isAlreadySelected) {
+                currentlySelected.filter { it.id != note.id }
+            } else {
+                currentlySelected + note
+            }
+            
+            currentState.copy(
+                selectedNotes = newSelectedNotes,
+                isSelectionMode = newSelectedNotes.isNotEmpty()
+            )
+        }
+    }
+
+    private fun enterSelectionMode() {
+        _state.update { it.copy(isSelectionMode = true) }
+    }
+
+    private fun exitSelectionMode() {
+        _state.update { 
+            it.copy(
+                isSelectionMode = false,
+                selectedNotes = emptyList()
+            ) 
+        }
+    }
+
+    private fun clearSelectedNotes() {
+        _state.update { it.copy(selectedNotes = emptyList()) }
     }
 
     private fun selectNote(note: Note) {
