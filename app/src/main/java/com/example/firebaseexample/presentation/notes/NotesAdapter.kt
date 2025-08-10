@@ -6,6 +6,8 @@ import androidx.core.view.isVisible
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
+import coil.load
+import com.example.firebaseexample.R
 import com.example.firebaseexample.databinding.ItemNoteBinding
 import com.example.firebaseexample.domain.models.Note
 import java.text.SimpleDateFormat
@@ -15,7 +17,9 @@ import java.util.Locale
 class NotesAdapter(
     private val onNoteClick: (Note) -> Unit,
     private val onNoteLongClick: (Note) -> Unit,
-    private val onNoteSelectionChanged: (Note, Boolean) -> Unit
+    private val onNoteSelectionChanged: (Note, Boolean) -> Unit,
+    private val onAttachClick: (Note) -> Unit,
+    private val onRemoveAttachmentClick: (Note) -> Unit
 ) : ListAdapter<Note, NotesAdapter.NoteViewHolder>(NoteDiffCallback()) {
 
     private var isSelectionMode = false
@@ -58,27 +62,37 @@ class NotesAdapter(
                 checkBoxSelection.isVisible = isSelectionMode
                 checkBoxSelection.isChecked = selectedNotes.contains(note.id)
 
+                // Attachment preview
+                val hasAttachment = !note.attachmentUrl.isNullOrBlank()
+                imageViewAttachment.isVisible = hasAttachment
+                buttonRemoveAttachment.isVisible = hasAttachment
+                if (hasAttachment) {
+                    imageViewAttachment.load(note.attachmentUrl) {
+                        placeholder(R.drawable.ic_launcher_foreground)
+                        error(R.drawable.ic_launcher_foreground)
+                        crossfade(true)
+                    }
+                }
                 // Click listeners
                 if (isSelectionMode) {
                     root.setOnClickListener {
                         val isCurrentlySelected = selectedNotes.contains(note.id)
                         onNoteSelectionChanged(note, !isCurrentlySelected)
                     }
-                    
                     checkBoxSelection.setOnClickListener {
                         onNoteSelectionChanged(note, checkBoxSelection.isChecked)
                     }
+                    buttonAttach.isEnabled = false
+                    buttonRemoveAttachment.isEnabled = false
+                    root.setOnLongClickListener { true }
                 } else {
-                    root.setOnClickListener {
-                        onNoteClick(note)
-                    }
-                }
-
-                root.setOnLongClickListener {
-                    if (!isSelectionMode) {
+                    root.setOnClickListener { onNoteClick(note) }
+                    root.setOnLongClickListener {
                         onNoteLongClick(note)
+                        true
                     }
-                    true
+                    buttonAttach.setOnClickListener { onAttachClick(note) }
+                    buttonRemoveAttachment.setOnClickListener { onRemoveAttachmentClick(note) }
                 }
 
                 // Visual feedback for selected items

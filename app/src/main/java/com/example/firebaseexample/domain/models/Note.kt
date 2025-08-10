@@ -5,5 +5,6 @@ data class Note(
     val title: String,
     val content: String,
     val timestamp: Long,
-    val updatedAt: Long? = null
+    val updatedAt: Long? = null,
+    val attachmentUrl: String? = null
 ) 

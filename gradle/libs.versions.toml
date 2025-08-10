@@ -1,5 +1,6 @@
 [versions]
 agp = "8.10.1"
+coilVersion = "2.7.0"
 kotlin = "2.0.21"
 googleGmsGoogleServices = "4.4.3"
 googleFirebaseCrashlytics = "3.0.5"
@@ -17,6 +18,7 @@ splash = "1.0.1"
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version = "1.16.0" }
 androidx-appcompat = { group = "androidx.appcompat", name = "appcompat", version = "1.7.1" }
+coil = { module = "io.coil-kt:coil", version.ref = "coilVersion" }
 material = { group = "com.google.android.material", name = "material", version = "1.12.0" }
 androidx-activity = { group = "androidx.activity", name = "activity", version = "1.10.1" }
 androidx-constraintlayout = { group = "androidx.constraintlayout", name = "constraintlayout", version = "2.2.1" }

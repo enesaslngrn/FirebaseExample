@@ -3,12 +3,15 @@ package com.example.firebaseexample.di
 import com.example.firebaseexample.data.repository.AuthRepositoryImpl
 import com.example.firebaseexample.data.repository.NoteRepositoryImpl
 import com.example.firebaseexample.data.repository.RemoteConfigRepositoryImpl
+import com.example.firebaseexample.data.repository.StorageRepositoryImpl
 import com.example.firebaseexample.domain.repository.AuthRepository
 import com.example.firebaseexample.domain.repository.NoteRepository
 import com.example.firebaseexample.domain.repository.RemoteConfigRepository
+import com.example.firebaseexample.domain.repository.StorageRepository
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.remoteconfig.FirebaseRemoteConfig
+import com.google.firebase.storage.FirebaseStorage
 import dagger.Binds
 import dagger.Module
 import dagger.Provides
@@ -38,6 +41,12 @@ abstract class AppModule {
         remoteConfigRepositoryImpl: RemoteConfigRepositoryImpl
     ): RemoteConfigRepository
 
+    @Binds
+    @Singleton
+    abstract fun bindStorageRepository(
+        storageRepositoryImpl: StorageRepositoryImpl
+    ): StorageRepository
+
     companion object {
         @Provides
         @Singleton
@@ -50,5 +59,9 @@ abstract class AppModule {
         @Provides
         @Singleton
         fun provideFirebaseRemoteConfig(): FirebaseRemoteConfig = FirebaseRemoteConfig.getInstance()
+
+        @Provides
+        @Singleton
+        fun provideFirebaseStorage(): FirebaseStorage = FirebaseStorage.getInstance()
     }
 } 
