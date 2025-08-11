@@ -64,6 +64,7 @@ dependencies {
 
     // Hilt
     implementation(libs.hilt.android)
+    implementation(libs.firebase.analytics)
     kapt(libs.hilt.compiler)
 
     // Navigation Component
