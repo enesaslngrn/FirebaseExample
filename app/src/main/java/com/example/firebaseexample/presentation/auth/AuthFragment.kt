@@ -129,7 +129,7 @@ class AuthFragment : Fragment() {
                 val googleIdOption = GetGoogleIdOption.Builder()
                     .setServerClientId(getString(R.string.default_web_client_id))
                     .setFilterByAuthorizedAccounts(false)
-                    .setAutoSelectEnabled(true)
+                    .setAutoSelectEnabled(false)
                     .build()
 
                 val request = GetCredentialRequest.Builder()
