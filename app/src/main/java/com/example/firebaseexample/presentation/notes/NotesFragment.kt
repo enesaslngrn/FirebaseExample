@@ -99,12 +99,15 @@ class NotesFragment : Fragment() {
     }
 
     private fun setupToolbars() {
+
         binding.toolbar.setOnMenuItemClickListener { menuItem ->
             handleToolbarMenuClick(menuItem)
         }
+
         binding.toolbarSelection.setNavigationOnClickListener {
             noteViewModel.onEvent(NoteEvent.ExitSelectionMode)
         }
+
         binding.toolbarSelection.setOnMenuItemClickListener { menuItem ->
             handleSelectionMenuClick(menuItem)
         }
@@ -134,6 +137,7 @@ class NotesFragment : Fragment() {
                 true
             }
             R.id.action_select_all -> {
+
                 state.notes.forEach { note ->
                     if (!state.selectedNotes.contains(note)) {
                         noteViewModel.onEvent(NoteEvent.ToggleNoteSelection(note))
@@ -172,20 +176,25 @@ class NotesFragment : Fragment() {
             progressIndicator.isVisible = state.isLoading
             textViewEmptyState.isVisible = state.notes.isEmpty() && state.isInitialized && !state.isLoading
             recyclerViewNotes.isVisible = state.notes.isNotEmpty()
+
             toolbar.isVisible = !state.isSelectionMode
             toolbarSelection.isVisible = state.isSelectionMode
             fabAddNote.isVisible = !state.isSelectionMode
+
             if (state.isSelectionMode) {
                 toolbarSelection.title = getString(R.string.selected_count, state.selectedNotes.size)
             }
         }
+
         notesAdapter.submitList(state.notes)
         notesAdapter.setSelectionMode(state.isSelectionMode)
         notesAdapter.updateSelectedNotes(state.selectedNotes)
+
         state.error?.let { error ->
             showSnackbar(error)
             noteViewModel.onEvent(NoteEvent.ClearError)
         }
+
         state.successMessage?.let { message ->
             showSnackbar(message)
             noteViewModel.onEvent(NoteEvent.ClearSuccessMessage)
@@ -194,12 +203,15 @@ class NotesFragment : Fragment() {
 
     private fun showAddEditNoteDialog(note: Note? = null) {
         val dialogBinding: DialogAddEditNoteBinding = DialogAddEditNoteBinding.inflate(layoutInflater)
+        
         val isEditMode: Boolean = note != null
         val title: String = if (isEditMode) getString(R.string.edit_note) else getString(R.string.add_note)
+
         if (isEditMode && note != null) {
             dialogBinding.editTextTitle.setText(note.title)
             dialogBinding.editTextContent.setText(note.content)
         }
+
         MaterialAlertDialogBuilder(requireContext())
             .setTitle(title)
             .setView(dialogBinding.root)

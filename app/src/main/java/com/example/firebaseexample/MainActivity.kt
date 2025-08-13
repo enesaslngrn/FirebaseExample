@@ -63,7 +63,6 @@ class MainActivity : AppCompatActivity() {
                     }
                     state.error != null -> {
                         Timber.e("Splash error: ${state.error}")
-                        initializeApp() // Proceed on error
                     }
                 }
             }

@@ -18,10 +18,6 @@ class NoteRepositoryImpl @Inject constructor(
 ) : NoteRepository {
     override fun getNotes(userId: String): Flow<List<Note>> = callbackFlow {
         val ref = firestore.collection("users").document(userId).collection("notes")
-            //.whereEqualTo("title", "title1")
-            //.whereNotEqualTo("updatedAt", null)
-            //.whereLessThan("timestamp", System.currentTimeMillis() - (30 * 1000)) // 30 saniye önce
-            //.limit(3)
             .orderBy("timestamp", Query.Direction.DESCENDING)
         val listener = ref.addSnapshotListener { snapshot, _ ->
             snapshot?.let {
@@ -35,34 +31,63 @@ class NoteRepositoryImpl @Inject constructor(
         awaitClose { listener.remove() }
     }
 
+    /**
+     * Note modelinde ID alanı var ve Firebase'in otomatik atadığı document ID ile eşleştirdik.
+     */
     override fun addNote(userId: String, note: Note): Flow<Result<Unit>> = flow {
         try {
             val ref = firestore.collection("users").document(userId).collection("notes")
             val noteId = note.id.ifBlank { ref.document().id }
             val noteDto = NoteDto.fromDomain(note.copy(id = noteId))
             ref.document(noteId).set(noteDto).await()
-            //ref.add(noteDto).await() // Eğer authentication'dan gelen uid yok ise otomatik document id ile oluşturur.
             emit(Result.success(Unit))
         } catch (e: Exception) {
             emit(Result.failure(e))
         }
     }
 
+//    /**
+//     * Note modelinde ID alanı olmadığı durum.
+//     */
+//    override fun addNote(userId: String, note: Note): Flow<Result<Unit>> = flow {
+//        try {
+//            val ref = firestore.collection("users").document(userId).collection("notes")
+//            val noteDto = NoteDto.fromDomain(note.copy())
+//            ref.add(noteDto).await()
+//            emit(Result.success(Unit))
+//        } catch (e: Exception) {
+//            emit(Result.failure(e))
+//        }
+//    }
+
+    /**
+     * Set ile update. NoteDto dolu olmalı ve copy() ile sadece değişecek alan belirtilmeli.
+     */
     override fun updateNote(userId: String, note: Note): Flow<Result<Unit>> = flow {
         try {
             val ref = firestore.collection("users").document(userId).collection("notes")
             val noteDto = NoteDto.fromDomain(note.copy(updatedAt = System.currentTimeMillis()))
-            //val noteDtoSet = NoteDto(title = note.title, content = note.content) // Eğer set kullanacaksak NoteDto hep dolu olmalı.
             ref.document(note.id).set(noteDto).await()
-
-            //val updatedFields = mapOf("title" to note.title, "content" to note.content) // Sadece update edilecek alan dolu olsa yeterli.
-            //ref.document(note.id).update(updatedFields).await()
-
             emit(Result.success(Unit))
         } catch (e: Exception) {
             emit(Result.failure(e))
         }
     }
+
+//    /**
+//     * Update ile update. NoteDto vermeye gerek yok. Değişecek alanlar map olarak verilsin yeterli.
+//     */
+//    override fun updateNote(userId: String, note: Note): Flow<Result<Unit>> = flow {
+//        try {
+//            val ref = firestore.collection("users").document(userId).collection("notes")
+//            val updatedFields = mapOf("title" to note.title, "content" to note.content)
+//            ref.document(note.id).update(updatedFields).await()
+//
+//            emit(Result.success(Unit))
+//        } catch (e: Exception) {
+//            emit(Result.failure(e))
+//        }
+//    }
 
     override fun deleteNote(userId: String, noteId: String): Flow<Result<Unit>> = flow {
         try {
@@ -88,8 +113,7 @@ class NoteRepositoryImpl @Inject constructor(
             val ref = firestore.collection("users").document(userId).collection("notes")
 
             Timber.d("Starting batch deletion of all notes for user: $userId")
-            
-            // Önce tüm dökümanları getir
+
             val snapshot = ref.get().await()
             val documents = snapshot.documents
             
@@ -99,7 +123,7 @@ class NoteRepositoryImpl @Inject constructor(
                 return@flow
             }
 
-            // Batch işlemi ile tümünü sil - Ama 2. indexte hata simülasyonu yapalım
+            // Batch işlemi ile tümünü sil - Ama 2. indexte hata simülasyonu yapalım.
             firestore.runBatch {
                 batch -> documents.forEachIndexed { index, documentSnapshot ->
                     if (index == 2) {
@@ -139,7 +163,7 @@ class NoteRepositoryImpl @Inject constructor(
             
             Timber.d("Starting individual deletion for ${noteIds.size} selected notes")
             
-            // Her notu tek tek sil - Ama 2. indexte hata simülasyonu yapalım
+            // Her notu tek tek sil - Ama 2. indexte hata simülasyonu yapalım.
             noteIds.forEachIndexed { index, noteId ->
                 if (index == 2) {
                     throw Exception("Individual deletion failed")
@@ -153,7 +177,6 @@ class NoteRepositoryImpl @Inject constructor(
                     results.add(Result.failure(e))
                 }
             }
-            // Sonuçları değerlendir
             val failures = results.filter { it.isFailure }
             val successes = results.filter { it.isSuccess }
             
@@ -162,9 +185,8 @@ class NoteRepositoryImpl @Inject constructor(
             if (failures.isEmpty()) {
                 emit(Result.success(Unit))
             } else {
-                // Kısmi başarı durumunda da success döndür ama log'da belirt
                 Timber.w("Some notes could not be deleted: ${failures.size} failed out of ${noteIds.size}")
-                emit(Result.success(Unit)) // Kısmi başarı da success sayılır
+                emit(Result.success(Unit))
             }
             
         } catch (e: Exception) {

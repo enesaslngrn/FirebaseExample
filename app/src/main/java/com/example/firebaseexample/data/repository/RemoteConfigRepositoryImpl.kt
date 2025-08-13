@@ -29,12 +29,11 @@ class RemoteConfigRepositoryImpl @Inject constructor(
 
     private fun setupRemoteConfig() {
         val configSettings = remoteConfigSettings {
-            minimumFetchIntervalInSeconds = 360 // 1 hour
+            minimumFetchIntervalInSeconds = 60
         }
         
         firebaseRemoteConfig.setConfigSettingsAsync(configSettings)
-        
-        // Set default values
+
         val defaultValues = mapOf(
             FORCE_UPDATE_VERSION_KEY to DEFAULT_FORCE_UPDATE_VERSION,
             MAINTENANCE_MODE_KEY to DEFAULT_MAINTENANCE_MODE
@@ -58,13 +57,5 @@ class RemoteConfigRepositoryImpl @Inject constructor(
             Timber.e(exception, "Failed to fetch remote config")
             emit(RemoteConfigResult.Error(exception.message ?: "Unknown error occurred"))
         }
-    }
-
-    override fun getForceUpdateVersion(): String {
-        return firebaseRemoteConfig.getString(FORCE_UPDATE_VERSION_KEY)
-    }
-
-    override fun isMaintenanceMode(): Boolean {
-        return firebaseRemoteConfig.getBoolean(MAINTENANCE_MODE_KEY)
     }
 } 

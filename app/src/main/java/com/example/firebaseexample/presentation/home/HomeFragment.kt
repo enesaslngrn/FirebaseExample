@@ -103,18 +103,15 @@ class HomeFragment : Fragment() {
         val currentUser = authViewModel.state.value.user
         
         if (currentUser?.isGoogleUser() == true || currentUser?.isPhoneUser() == true) {
-            // For Google users, show simple confirmation dialog without password input
             MaterialAlertDialogBuilder(requireContext())
                 .setTitle(getString(R.string.delete_account_title))
                 .setMessage(getString(R.string.delete_google_account_message))
                 .setPositiveButton(getString(R.string.delete)) { _, _ ->
-                    // For Google users, pass null as password
                     authViewModel.onEvent(AuthEvent.DeleteAccount())
                 }
                 .setNegativeButton(getString(R.string.cancel), null)
                 .show()
         } else {
-            // For email/password users, show password input dialog
             val dialogBinding: DialogDeleteAccountBinding = DialogDeleteAccountBinding.inflate(layoutInflater)
             MaterialAlertDialogBuilder(requireContext())
                 .setTitle(getString(R.string.delete_account_title))
@@ -232,6 +229,7 @@ class HomeFragment : Fragment() {
         state.user?.let { user ->
             binding.userEmailTextView.text = user.email
             binding.userIdTextView.text = getString(R.string.user_id, user.id)
+
             user.isEmailVerified?.let {
                 binding.verifiedTextView.isVisible = it
                 binding.sendVerificationButton.isVisible = !it

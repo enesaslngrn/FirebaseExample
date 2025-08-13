@@ -41,7 +41,7 @@ class SplashViewModel @Inject constructor(
                             it.copy(
                                 isLoading = false,
                                 error = result.message,
-                                canProceed = true // Allow proceed on error
+                                canProceed = false
                             )
                         }
                         Timber.e("Remote Config error: ${result.message}")

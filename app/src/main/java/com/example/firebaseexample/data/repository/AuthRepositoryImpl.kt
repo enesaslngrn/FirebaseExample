@@ -35,12 +35,6 @@ class AuthRepositoryImpl @Inject constructor(
 ) : AuthRepository {
 
     override fun getCurrentUser(): Flow<User?> = callbackFlow {
-        /**
-         * Bu yapı, callback tabanlı API’leri Kotlin Flow’a çevirmek için kullanılır.
-         * FirebaseAuth.AuthStateListener bir callback olduğu için callbackFlow doğru seçimdir.
-         * trySend(user) - Listener tetiklendiğinde yeni kullanıcı durumu Flow'a gönderilir. Bu sayede collect {} bloğunda UI otomatik güncellenebilir.
-         * awaitClose - Flow iptal edildiğinde (örneğin fragment destroy olduğunda) dinleyiciyi kaldırır. Bellek sızıntısı (memory leak) yaşanmaması için çok önemlidir.
-         */
         val listener = FirebaseAuth.AuthStateListener { auth ->
             val user = auth.currentUser?.toUserDto()?.toDomain()
             trySend(user)
@@ -66,51 +60,6 @@ class AuthRepositoryImpl @Inject constructor(
             emit(AuthResult.Error(e.message ?: "Sign in failed"))
         }
     }
-
-//    override fun signInWithEmailAndPassword(email: String, password: String): Flow<AuthResult> = callbackFlow {
-//        trySend(AuthResult.Loading)
-//
-//        val task = firebaseAuth.signInWithEmailAndPassword(email, password)
-//        task.addOnCompleteListener { taskResult ->
-//            if (taskResult.isSuccessful) {
-//                val user = taskResult.result?.user
-//                if (user != null) {
-//                    trySend(AuthResult.Success(user.toUserDto().toDomain()))
-//                } else {
-//                    trySend(AuthResult.Error("Sign in failed"))
-//                }
-//            } else {
-//                val error = taskResult.exception?.message ?: "Sign in failed"
-//                Timber.e(taskResult.exception, "Sign in error")
-//                trySend(AuthResult.Error(error))
-//            }
-//            close()
-//        }
-//
-//        awaitClose { /* no active listener to remove in this case */ }
-//    }
-
-//    override fun signInWithEmailAndPassword(email: String, password: String): Flow<AuthResult> = callbackFlow {
-//        trySend(AuthResult.Loading)
-//
-//        val task = firebaseAuth.signInWithEmailAndPassword(email, password)
-//        task.addOnSuccessListener { result ->
-//            val user = result.user
-//            if (user != null) {
-//                trySend(AuthResult.Success(user.toUserDto().toDomain()))
-//            } else {
-//                trySend(AuthResult.Error("Sign in failed"))
-//            }
-//            close()
-//        }.addOnFailureListener { exception ->
-//            Timber.e(exception, "Sign in error")
-//            trySend(AuthResult.Error(exception.message ?: "Sign in failed"))
-//            close()
-//        }
-//
-//        awaitClose { /* clean-up if needed */ }
-//    }
-
 
     override fun signUpWithEmailAndPassword(email: String, password: String): Flow<AuthResult> = flow {
         emit(AuthResult.Loading)
@@ -184,25 +133,24 @@ class AuthRepositoryImpl @Inject constructor(
                 val userId = user.uid
                 val userProviders = user.providerData.map { it.providerId }
 
-                // Reauthenticate based on provider
                 if (userProviders.contains("google.com")) {
                     Timber.d("Google user detected, proceeding with account deletion")
                 } else if (userProviders.contains("phone")){
                     Timber.d("Phone user detected, proceeding with account deletion")
                 } else if (userProviders.contains("password") && currentPassword != null) {
-                    // Email/Password user reauthentication
+
                     val credential = EmailAuthProvider.getCredential(user.email ?: "", currentPassword)
                     user.reauthenticate(credential).await()
                     Timber.d("Email/Password user reauthenticated successfully")
+
                 } else {
                     emit(AuthResult.Error("Invalid authentication method or missing credentials"))
                     return@flow
                 }
-                // Then delete user data from Firestore
                 deleteUserDataFromFirestore(userId)
 
-                // Delete the Firebase Auth account first
                 user.delete().await()
+
                 Timber.d("Firebase Auth account deleted successfully")
 
                 emit(AuthResult.Success(user = null))
@@ -236,16 +184,9 @@ class AuthRepositoryImpl @Inject constructor(
         val user = firebaseAuth.currentUser
         if (user != null) {
             try {
-                // First reauthenticate the user with current password
-                /**
-                 * Hassas işlemler yapmadan önce kullanıcının kimliğinin tekrar doğrulanması (reauthentication) güvenlik gereği zorunludur.
-                 * Bu yüzden credentials (kimlik bilgileri) alınıp önce reauthenticate() edilir.
-                 * Change password OAuth için geçerli değildir. Sadece Email&Password girişi yapmış kullanıcılar içindir.
-                 */
                 val credential = EmailAuthProvider.getCredential(user.email ?: "", currentPassword)
                 user.reauthenticate(credential).await()
-                
-                // Then update password
+
                 user.updatePassword(newPassword).await()
                 emit(AuthResult.Success(user.toUserDto().toDomain()))
             } catch (e: Exception) {
@@ -269,7 +210,6 @@ class AuthRepositoryImpl @Inject constructor(
 
     private suspend fun deleteUserDataFromFirestore(userId: String) {
         try {
-            // Delete user's notes collection
             val notesCollection = firestore.collection("users").document(userId).collection("notes")
             val notesSnapshot = notesCollection.get().await()
 
@@ -283,7 +223,6 @@ class AuthRepositoryImpl @Inject constructor(
             }
         } catch (e: Exception) {
             Timber.w(e, "Error deleting user data from Firestore: ${e.message}")
-            // Don't throw the exception as the main account deletion was successful
         }
     }
 
@@ -299,13 +238,12 @@ class AuthRepositoryImpl @Inject constructor(
 
         trySend(AuthResult.Loading)
 
-        // Configure test phone numbers for development
         if (phoneNumber == "+905537414070") {
             Timber.d("Test phone number detected")
             firebaseAuth.firebaseAuthSettings.apply {
-                //setAppVerificationDisabledForTesting(true) // Play Integrity API yada reCapthca'yı kapatır.
-                //forceRecaptchaFlowForTesting(true) // Test için recaptcha'yı açar. setAppVerificationDisabledForTesting(false) olmalıdır.
-                //setAutoRetrievedSmsCodeForPhoneNumber(phoneNumber, "123456") // Auto retrieve testi için kullanılır.
+                setAppVerificationDisabledForTesting(true)
+                forceRecaptchaFlowForTesting(false)
+                setAutoRetrievedSmsCodeForPhoneNumber(phoneNumber, "123456")
             }
             Timber.d("App verification disabled for testing")
         }
@@ -313,12 +251,6 @@ class AuthRepositoryImpl @Inject constructor(
         val callbacks = object : PhoneAuthProvider.OnVerificationStateChangedCallbacks() {
             override fun onVerificationCompleted(credential: PhoneAuthCredential) {
                 Timber.d("Phone verification completed automatically")
-                // This callback will be invoked in two situations:
-                // 1 - Instant verification. In some cases the phone number can be instantly
-                //     verified without needing to send or enter a verification code.
-                // 2 - Auto-retrieval. On some devices Google Play services can automatically
-                //     detect the incoming verification SMS and perform verification without
-                //     user action.
                 launch {
                     try {
                         val result = firebaseAuth.signInWithCredential(credential).await()
@@ -360,31 +292,26 @@ class AuthRepositoryImpl @Inject constructor(
                 if (phoneNumber == "+905537414070") {
                     Timber.d("Test phone number - use verification code: 123456")
                 }
-                // Burada verificationId ve token'ı bir yerde saklıyoruz. Bu sayede resend etmek için kullanacağız.
                 trySend(AuthResult.CodeSent(verificationId, token))
             }
 
             override fun onCodeAutoRetrievalTimeOut(verificationId: String) {
                 Timber.d("Code auto-retrieval timeout for verification ID: $verificationId")
-                // SMS geldikten sonra, sistemin otomatik doldurması için belirlenen timeout süresi.
-                // This is called when the timeout expires and auto-retrieval is no longer possible
-                // The user must manually enter the verification code
             }
         }
 
         val optionsBuilder = PhoneAuthOptions.newBuilder(firebaseAuth)
             .setPhoneNumber(phoneNumber)
-            .setTimeout(60L, TimeUnit.SECONDS) // Bu alan auto sms retrieve timeout süresi. Manuel code girişi için timeout süresi yok.
+            .setTimeout(60L, TimeUnit.SECONDS)// Auto-retrieval timeout.
             .setActivity(activity)
             .setCallbacks(callbacks)
-            
-        // If resendToken is provided, add it to options
+
         resendToken?.let { token ->
             optionsBuilder.setForceResendingToken(token)
             Timber.d("Using resend token for phone verification")
         }
             
-        PhoneAuthProvider.verifyPhoneNumber(optionsBuilder.build()) // Starts verification process
+        PhoneAuthProvider.verifyPhoneNumber(optionsBuilder.build())
         
         awaitClose { }
     }

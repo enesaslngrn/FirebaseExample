@@ -11,6 +11,7 @@ data class AuthState(
     val isInitialized: Boolean = false,
     val verificationMessage: String? = null,
     val accountDeleted: Boolean = false,
+
     // Phone Auth states
     val isPhoneAuthMode: Boolean = false,
     val phoneNumber: String = "",
@@ -18,6 +19,7 @@ data class AuthState(
     val resendToken: PhoneAuthProvider.ForceResendingToken? = null,
     val isCodeSent: Boolean = false,
     val isVerifyingCode: Boolean = false,
+
     // Timer states
     val remainingTime: Int = 0,
     val isTimerActive: Boolean = false,
