@@ -101,7 +101,7 @@ class StorageRepositoryImpl @Inject constructor(
         try {
             val ref = firebaseStorage.reference
                 .child(userId)
-                .child(userId)
+                .child("${userId}.jpg")
             val url = ref.downloadUrl.await().toString()
             emit(Result.success(url))
         } catch (e: Exception) {
@@ -114,7 +114,7 @@ class StorageRepositoryImpl @Inject constructor(
         try {
             val ref = firebaseStorage.reference
                 .child(userId)
-                .child(userId)
+                .child("${userId}.jpg")
             ref.delete().await()
             emit(Result.success(Unit))
         } catch (e: Exception) {
