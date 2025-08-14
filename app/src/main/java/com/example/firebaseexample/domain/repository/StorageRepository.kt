@@ -5,7 +5,6 @@ import kotlinx.coroutines.flow.Flow
 
 interface StorageRepository {
     fun uploadUserProfilePhoto(userId: String, fileUri: Uri): Flow<Result<String>>
-    fun getUserProfilePhotoUrl(userId: String): Flow<Result<String?>>
     fun deleteUserProfilePhoto(userId: String): Flow<Result<Unit>>
 
     fun uploadNoteAttachment(userId: String, noteId: String, fileUri: Uri): Flow<Result<String>>

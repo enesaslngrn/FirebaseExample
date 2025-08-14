@@ -11,6 +11,7 @@ import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
 import coil.load
+import coil.transform.CircleCropTransformation
 import com.example.firebaseexample.R
 import com.example.firebaseexample.databinding.FragmentHomeBinding
 import com.example.firebaseexample.databinding.DialogChangePasswordBinding
@@ -33,14 +34,13 @@ class HomeFragment : Fragment() {
     private val binding get() = _binding!!
 
     private val authViewModel: AuthViewModel by viewModels()
-    private val storageViewModel: HomeStorageViewModel by viewModels()
 
     private val pickImageLauncher = registerForActivityResult(
         ActivityResultContracts.GetContent()
     ) { uri: Uri? ->
         val userId: String = authViewModel.state.value.user?.id ?: return@registerForActivityResult
         if (uri != null) {
-            storageViewModel.onEvent(userId, HomeStorageEvent.UploadProfilePhoto(uri))
+            authViewModel.onEvent(AuthEvent.UploadProfilePhoto(userId, uri))
         }
     }
 
@@ -57,7 +57,6 @@ class HomeFragment : Fragment() {
         super.onViewCreated(view, savedInstanceState)
         setupUI()
         observeAuthState()
-        observeStorageState()
     }
 
     private fun setupUI() {
@@ -91,7 +90,7 @@ class HomeFragment : Fragment() {
                 .setTitle(R.string.delete)
                 .setMessage(R.string.profile_photo_deleted)
                 .setPositiveButton(R.string.delete) { _, _ ->
-                    storageViewModel.onEvent(userId, HomeStorageEvent.DeleteProfilePhoto)
+                    authViewModel.onEvent(AuthEvent.DeleteProfilePhoto(userId))
                 }
                 .setNegativeButton(R.string.cancel, null)
                 .show()
@@ -197,28 +196,6 @@ class HomeFragment : Fragment() {
             authViewModel.state.collectLatest { state ->
                 updateUI(state)
                 handleAccountDeletion(state)
-                val userId: String? = state.user?.id
-                if (userId != null) {
-                    storageViewModel.onEvent(userId, HomeStorageEvent.LoadProfilePhoto)
-                }
-            }
-        }
-    }
-
-    private fun observeStorageState() {
-        viewLifecycleOwner.lifecycleScope.launch {
-            storageViewModel.state.collectLatest { state ->
-                binding.progressIndicator.isVisible = state.isLoading
-                state.profilePhotoUrl?.let { url ->
-                    binding.profileImageView.load(url) {
-                        placeholder(R.drawable.ic_launcher_foreground)
-                        error(R.drawable.ic_launcher_foreground)
-                    }
-                } ?: run {
-                    binding.profileImageView.setImageResource(R.drawable.ic_launcher_foreground)
-                }
-                state.error?.let { showSnackbar(it) }
-                state.successMessage?.let { showSnackbar(it) }
             }
         }
     }
@@ -229,6 +206,14 @@ class HomeFragment : Fragment() {
         state.user?.let { user ->
             binding.userEmailTextView.text = user.email
             binding.userIdTextView.text = getString(R.string.user_id, user.id)
+
+            // Load profile photo with Coil
+            binding.profileImageView.load(user.photoUrl) {
+                crossfade(true)
+                placeholder(R.drawable.ic_launcher_foreground)
+                error(R.drawable.ic_launcher_foreground)
+                transformations(CircleCropTransformation())
+            }
 
             user.isEmailVerified?.let {
                 binding.verifiedTextView.isVisible = it

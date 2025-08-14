@@ -16,6 +16,8 @@ import com.example.firebaseexample.domain.usecases.ReloadUserUseCase
 import com.example.firebaseexample.domain.usecases.ChangePasswordUseCase
 import com.example.firebaseexample.domain.usecases.VerifyPhoneNumberUseCase
 import com.example.firebaseexample.domain.usecases.SignInWithPhoneUseCase
+import com.example.firebaseexample.domain.usecases.UploadAndUpdateProfilePhotoUseCase
+import com.example.firebaseexample.domain.usecases.DeleteAndUpdateProfilePhotoUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -40,7 +42,9 @@ class AuthViewModel @Inject constructor(
     private val reloadUserUseCase: ReloadUserUseCase,
     private val changePasswordUseCase: ChangePasswordUseCase,
     private val verifyPhoneNumberUseCase: VerifyPhoneNumberUseCase,
-    private val signInWithPhoneUseCase: SignInWithPhoneUseCase
+    private val signInWithPhoneUseCase: SignInWithPhoneUseCase,
+    private val uploadAndUpdateProfilePhotoUseCase: UploadAndUpdateProfilePhotoUseCase,
+    private val deleteAndUpdateProfilePhotoUseCase: DeleteAndUpdateProfilePhotoUseCase
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(AuthState())
@@ -75,6 +79,11 @@ class AuthViewModel @Inject constructor(
             is AuthEvent.ClearError -> _state.update { it.copy(error = null) }
             is AuthEvent.ClearSuccessMessage -> _state.update { it.copy(successMessage = null, accountDeleted = false) }
             is AuthEvent.ChangePassword -> changePassword(event.currentPassword, event.newPassword)
+
+            // Profile photo events
+            is AuthEvent.UploadProfilePhoto -> uploadProfilePhoto(event.userId, event.fileUri)
+            is AuthEvent.DeleteProfilePhoto -> deleteProfilePhoto(event.userId)
+
             // Phone Auth events
             is AuthEvent.TogglePhoneAuthMode -> togglePhoneAuthMode()
             is AuthEvent.VerifyPhoneNumber -> verifyPhoneNumber(event.phoneNumber, event.fragmentActivity)
@@ -488,6 +497,66 @@ class AuthViewModel @Inject constructor(
                 isTimerActive = false,
                 remainingTime = 0
             )
+        }
+    }
+
+    private fun uploadProfilePhoto(userId: String, fileUri: android.net.Uri) {
+        viewModelScope.launch {
+            uploadAndUpdateProfilePhotoUseCase(userId, fileUri).collect { result ->
+                when (result) {
+                    is AuthResult.Loading -> {
+                        _state.update { it.copy(isLoading = true, error = null) }
+                    }
+                    is AuthResult.Success -> {
+                        _state.update { 
+                            it.copy(
+                                isLoading = false,
+                                successMessage = "Profile photo updated successfully"
+                            ) 
+                        }
+                    }
+                    is AuthResult.Error -> {
+                        _state.update { 
+                            it.copy(
+                                isLoading = false,
+                                error = result.message
+                            ) 
+                        }
+                        Timber.e("Failed to update profile photo: ${result.message}")
+                    }
+                    else -> { }
+                }
+            }
+        }
+    }
+
+    private fun deleteProfilePhoto(userId: String) {
+        viewModelScope.launch {
+            deleteAndUpdateProfilePhotoUseCase(userId).collect { result ->
+                when (result) {
+                    is AuthResult.Loading -> {
+                        _state.update { it.copy(isLoading = true, error = null) }
+                    }
+                    is AuthResult.Success -> {
+                        _state.update { 
+                            it.copy(
+                                isLoading = false,
+                                successMessage = "Profile photo deleted successfully"
+                            ) 
+                        }
+                    }
+                    is AuthResult.Error -> {
+                        _state.update { 
+                            it.copy(
+                                isLoading = false,
+                                error = result.message
+                            ) 
+                        }
+                        Timber.e("Failed to delete profile photo: ${result.message}")
+                    }
+                    else -> { }
+                }
+            }
         }
     }
 } 

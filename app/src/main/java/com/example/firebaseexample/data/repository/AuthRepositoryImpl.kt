@@ -18,6 +18,7 @@ import com.google.firebase.auth.FirebaseAuthRecentLoginRequiredException
 import com.google.firebase.auth.PhoneAuthProvider
 import com.google.firebase.auth.PhoneAuthCredential
 import com.google.firebase.auth.PhoneAuthOptions
+import com.google.firebase.auth.UserProfileChangeRequest
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
@@ -28,6 +29,7 @@ import timber.log.Timber
 import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 import kotlinx.coroutines.launch
+import androidx.core.net.toUri
 
 class AuthRepositoryImpl @Inject constructor(
     private val firebaseAuth: FirebaseAuth,
@@ -82,6 +84,27 @@ class AuthRepositoryImpl @Inject constructor(
         } catch (e: Exception) {
             Timber.e(e, "Sign out error")
             emit(AuthResult.Error(e.message ?: "Sign out failed"))
+        }
+    }
+
+    override fun updateUserProfilePhoto(url: String?): Flow<AuthResult> = flow {
+        emit(AuthResult.Loading)
+        try {
+            val user = firebaseAuth.currentUser
+            if (user != null) {
+                val profileUpdates = UserProfileChangeRequest.Builder()
+                    .setPhotoUri(url?.toUri())
+                    .build()
+                    
+                user.updateProfile(profileUpdates).await()
+                emit(AuthResult.Success(user.toUserDto().toDomain()))
+                Timber.d("Profile photo updated successfully")
+            } else {
+                emit(AuthResult.Error("No user logged in"))
+            }
+        } catch (e: Exception) {
+            Timber.e(e, "Profile photo update error")
+            emit(AuthResult.Error(e.message ?: "Profile photo update failed"))
         }
     }
 
@@ -340,7 +363,7 @@ class AuthRepositoryImpl @Inject constructor(
             id = uid,
             email = email,
             displayName = displayName,
-            photoUrl = photoUrl.toString(),
+            photoUrl = photoUrl?.toString(),
             isEmailVerified = isEmailVerified,
             providers = providerData.map { it.providerId }
         )

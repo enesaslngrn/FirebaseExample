@@ -5,11 +5,9 @@ import com.example.firebaseexample.domain.repository.StorageRepository
 import com.google.firebase.storage.FirebaseStorage
 import com.google.firebase.storage.StorageMetadata
 import kotlinx.coroutines.channels.awaitClose
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.flow.flow
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 import timber.log.Timber
 import javax.inject.Inject
@@ -59,19 +57,6 @@ class StorageRepositoryImpl @Inject constructor(
         } catch (e: Exception) {
             Timber.e(e, "Profil fotoğrafı yükleme hatası")
             trySend(Result.failure(e))
-        }
-    }
-
-    override fun getUserProfilePhotoUrl(userId: String): Flow<Result<String?>> = flow {
-        try {
-            val ref = firebaseStorage.reference
-                .child(userId)
-                .child("${userId}.jpg")
-            val url = ref.downloadUrl.await().toString()
-            emit(Result.success(url))
-        } catch (e: Exception) {
-            Timber.w(e, "Profile photo not found or failed to get url")
-            emit(Result.success(null))
         }
     }
 

@@ -1,5 +1,6 @@
 package com.example.firebaseexample.presentation.auth
 
+import android.net.Uri
 import androidx.fragment.app.FragmentActivity
 
 sealed class AuthEvent {
@@ -13,6 +14,10 @@ sealed class AuthEvent {
     data object ClearSuccessMessage : AuthEvent()
     data class DeleteAccount(val currentPassword: String? = null) : AuthEvent()
     data class ChangePassword(val currentPassword: String, val newPassword: String) : AuthEvent()
+
+    // Profile photo events
+    data class UploadProfilePhoto(val userId: String, val fileUri: Uri) : AuthEvent()
+    data class DeleteProfilePhoto(val userId: String) : AuthEvent()
 
     // Phone Auth events
     data object TogglePhoneAuthMode : AuthEvent()
