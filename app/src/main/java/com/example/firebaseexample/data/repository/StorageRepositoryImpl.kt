@@ -18,84 +18,49 @@ class StorageRepositoryImpl @Inject constructor(
     private val firebaseStorage: FirebaseStorage
 ) : StorageRepository {
 
-    override fun uploadUserProfilePhoto(userId: String, fileUri: Uri): Flow<Result<String>> = flow {
+    override fun uploadUserProfilePhoto(
+        userId: String,
+        fileUri: Uri
+    ): Flow<Result<String>> = callbackFlow {
         try {
             val ref = firebaseStorage.reference
                 .child(userId)
                 .child("${userId}.jpg")
+
             val metadata = StorageMetadata.Builder()
                 .setContentType("image/jpeg")
                 .build()
+
             val uploadTask = ref.putFile(fileUri, metadata)
+
+            uploadTask.addOnProgressListener { snapshot ->
+                val progress = (100.0 * snapshot.bytesTransferred / snapshot.totalByteCount).toInt()
+                Timber.d("Yükleme ilerlemesi: %d%%", progress)
+                }
+                .addOnPausedListener {
+                    Timber.d("Yükleme duraklatıldı.")
+                }
+                .addOnFailureListener { e ->
+                    Timber.e(e, "Yükleme başarısız oldu.")
+                    trySend(Result.failure(e))
+                }
+                .addOnSuccessListener {
+                    Timber.d("Yükleme başarıyla tamamlandı.")
+                }
             val url = uploadTask.continueWithTask { task ->
                 if (!task.isSuccessful) {
                     task.exception?.let { throw it }
                 }
                 ref.downloadUrl
             }.await().toString()
-            emit(Result.success(url))
+
+            trySend(Result.success(url))
+            awaitClose {  }
         } catch (e: Exception) {
-            Timber.e(e, "Failed to upload profile photo")
-            emit(Result.failure(e))
+            Timber.e(e, "Profil fotoğrafı yükleme hatası")
+            trySend(Result.failure(e))
         }
     }
-
-//    /**
-//     * Yükleme durumunu simule ettiğimiz upload metodu:
-//     */
-//    override fun uploadUserProfilePhoto(
-//        userId: String,
-//        fileUri: Uri
-//    ): Flow<Result<String>> = callbackFlow {
-//        try {
-//            val ref = firebaseStorage.reference
-//                .child(userId)
-//                .child("${userId}.jpg")
-//
-//            val metadata = StorageMetadata.Builder()
-//                .setContentType("image/jpeg")
-//                .build()
-//
-//            val uploadTask = ref.putFile(fileUri, metadata)
-//
-//            // 🔹 İlerleme durumunu dinle
-//            uploadTask.addOnProgressListener { snapshot ->
-//                val progress = (100.0 * snapshot.bytesTransferred / snapshot.totalByteCount).toInt()
-//                Timber.d("Yükleme ilerlemesi: %d%%", progress)
-//                    if (progress in 50..75){
-//                       uploadTask.pause()
-//                    }
-//                }
-//                .addOnPausedListener {
-//                    Timber.d("Yükleme duraklatıldı.")
-//                    launch {
-//                        delay(2000)
-//                        uploadTask.resume()
-//                    }
-//                }
-//                .addOnFailureListener { e ->
-//                    Timber.e(e, "Yükleme başarısız oldu.")
-//                    trySend(Result.failure(e))
-//                }
-//                .addOnSuccessListener {
-//                    Timber.d("Yükleme başarıyla tamamlandı.")
-//                }
-//
-//            // 🔹 Yükleme tamamlanınca URL al
-//            val url = uploadTask.continueWithTask { task ->
-//                if (!task.isSuccessful) {
-//                    task.exception?.let { throw it }
-//                }
-//                ref.downloadUrl
-//            }.await().toString()
-//
-//            trySend(Result.success(url))
-//            awaitClose {  }
-//        } catch (e: Exception) {
-//            Timber.e(e, "Profil fotoğrafı yükleme hatası")
-//            trySend(Result.failure(e))
-//        }
-//    }
 
     override fun getUserProfilePhotoUrl(userId: String): Flow<Result<String?>> = flow {
         try {
