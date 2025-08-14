@@ -1,10 +1,12 @@
 package com.example.firebaseexample.presentation.notes
 
+import android.net.Uri
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.MenuItem
 import android.view.View
 import android.view.ViewGroup
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.view.isVisible
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
@@ -32,6 +34,17 @@ class NotesFragment : Fragment() {
     private val authViewModel: AuthViewModel by viewModels()
 
     private lateinit var notesAdapter: NotesAdapter
+
+    private var pendingAttachNote: Note? = null
+    private val pickAttachmentLauncher = registerForActivityResult(
+        ActivityResultContracts.GetContent()
+    ) { uri: Uri? ->
+        val note = pendingAttachNote ?: return@registerForActivityResult
+        if (uri != null) {
+            noteViewModel.onEvent(NoteEvent.UploadAttachment(note, uri))
+        }
+        pendingAttachNote = null
+    }
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -61,8 +74,15 @@ class NotesFragment : Fragment() {
                     showDeleteNoteDialog(note)
                 }
             },
-            onNoteSelectionChanged = { note, isSelected ->
+            onNoteSelectionChanged = { note, _ ->
                 noteViewModel.onEvent(NoteEvent.ToggleNoteSelection(note))
+            },
+            onAttachClick = { note ->
+                pendingAttachNote = note
+                pickAttachmentLauncher.launch("image/*")
+            },
+            onRemoveAttachmentClick = { note ->
+                noteViewModel.onEvent(NoteEvent.DeleteAttachment(note))
             }
         )
 
@@ -195,60 +215,55 @@ class NotesFragment : Fragment() {
         MaterialAlertDialogBuilder(requireContext())
             .setTitle(title)
             .setView(dialogBinding.root)
-            .setPositiveButton(if (isEditMode) getString(R.string.update) else getString(R.string.add)) { _, _ ->
-                val noteTitle: String = dialogBinding.editTextTitle.text.toString().trim()
-                val noteContent: String = dialogBinding.editTextContent.text.toString().trim()
+            .setPositiveButton(if (isEditMode) R.string.update else R.string.attach) { _, _ ->
+                val titleText: String = dialogBinding.editTextTitle.text.toString().trim()
+                val contentText: String = dialogBinding.editTextContent.text.toString().trim()
 
-                if (noteTitle.isBlank()) {
+                if (titleText.isBlank()) {
                     showSnackbar(getString(R.string.title_cannot_be_empty))
                     return@setPositiveButton
                 }
 
                 if (isEditMode && note != null) {
-                    val updatedNote: Note = note.copy(
-                        title = noteTitle,
-                        content = noteContent
-                    )
-                    noteViewModel.onEvent(NoteEvent.UpdateNote(updatedNote))
+                    noteViewModel.onEvent(NoteEvent.UpdateNote(note.copy(title = titleText, content = contentText)))
                 } else {
-                    noteViewModel.onEvent(NoteEvent.AddNote(noteTitle, noteContent))
+                    noteViewModel.onEvent(NoteEvent.AddNote(titleText, contentText))
                 }
             }
-            .setNegativeButton(getString(R.string.cancel), null)
+            .setNegativeButton(R.string.cancel, null)
             .show()
     }
 
     private fun showDeleteNoteDialog(note: Note) {
         MaterialAlertDialogBuilder(requireContext())
-            .setTitle(getString(R.string.delete_note))
+            .setTitle(R.string.delete_note)
             .setMessage(getString(R.string.delete_note_confirmation, note.title))
-            .setPositiveButton(getString(R.string.delete)) { _, _ ->
+            .setPositiveButton(R.string.delete) { _, _ ->
                 noteViewModel.onEvent(NoteEvent.DeleteNote(note.id))
             }
-            .setNegativeButton(getString(R.string.cancel), null)
+            .setNegativeButton(R.string.cancel, null)
             .show()
     }
 
     private fun showDeleteAllNotesDialog() {
         MaterialAlertDialogBuilder(requireContext())
-            .setTitle(getString(R.string.delete_all_notes))
-            .setMessage(getString(R.string.delete_all_confirmation))
-            .setPositiveButton(getString(R.string.delete)) { _, _ ->
+            .setTitle(R.string.delete_all_notes)
+            .setMessage(R.string.delete_all_confirmation)
+            .setPositiveButton(R.string.delete) { _, _ ->
                 noteViewModel.onEvent(NoteEvent.DeleteAllNotes)
             }
-            .setNegativeButton(getString(R.string.cancel), null)
+            .setNegativeButton(R.string.cancel, null)
             .show()
     }
 
     private fun showDeleteSelectedNotesDialog(selectedNotes: List<Note>) {
         MaterialAlertDialogBuilder(requireContext())
-            .setTitle(getString(R.string.delete_selected))
+            .setTitle(R.string.delete_selected)
             .setMessage(getString(R.string.delete_selected_confirmation, selectedNotes.size))
-            .setPositiveButton(getString(R.string.delete)) { _, _ ->
-                val noteIds = selectedNotes.map { it.id }
-                noteViewModel.onEvent(NoteEvent.DeleteSelectedNotes(noteIds))
+            .setPositiveButton(R.string.delete) { _, _ ->
+                noteViewModel.onEvent(NoteEvent.DeleteSelectedNotes(selectedNotes.map { it.id }))
             }
-            .setNegativeButton(getString(R.string.cancel), null)
+            .setNegativeButton(R.string.cancel, null)
             .show()
     }
 

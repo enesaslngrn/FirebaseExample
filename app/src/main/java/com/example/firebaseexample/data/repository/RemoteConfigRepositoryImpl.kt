@@ -58,12 +58,4 @@ class RemoteConfigRepositoryImpl @Inject constructor(
             emit(RemoteConfigResult.Error(exception.message ?: "Unknown error occurred"))
         }
     }
-
-    override fun getForceUpdateVersion(): String {
-        return firebaseRemoteConfig.getString(FORCE_UPDATE_VERSION_KEY)
-    }
-
-    override fun isMaintenanceMode(): Boolean {
-        return firebaseRemoteConfig.getBoolean(MAINTENANCE_MODE_KEY)
-    }
 } 

@@ -1,5 +1,6 @@
 package com.example.firebaseexample.presentation.notes
 
+import android.net.Uri
 import com.example.firebaseexample.domain.models.Note
 
 sealed class NoteEvent {
@@ -17,4 +18,7 @@ sealed class NoteEvent {
     data object ExitSelectionMode : NoteEvent()
     data object ClearError : NoteEvent()
     data object ClearSuccessMessage : NoteEvent()
+    // Storage
+    data class UploadAttachment(val note: Note, val fileUri: Uri) : NoteEvent()
+    data class DeleteAttachment(val note: Note) : NoteEvent()
 } 

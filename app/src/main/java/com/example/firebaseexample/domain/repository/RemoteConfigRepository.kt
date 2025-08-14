@@ -5,6 +5,4 @@ import kotlinx.coroutines.flow.Flow
 
 interface RemoteConfigRepository {
     fun fetchRemoteConfig(): Flow<RemoteConfigResult>
-    fun getForceUpdateVersion(): String
-    fun isMaintenanceMode(): Boolean
 } 

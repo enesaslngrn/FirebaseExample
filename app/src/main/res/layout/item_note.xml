@@ -65,6 +65,40 @@
             app:layout_constraintTop_toBottomOf="@+id/textViewTitle"
             tools:text="This is the content of the note. It can be multiple lines and will be truncated if it's too long." />
 
+        <ImageView
+            android:id="@+id/imageViewAttachment"
+            android:layout_width="0dp"
+            android:layout_height="160dp"
+            android:layout_marginTop="@dimen/spacing_8"
+            android:scaleType="centerCrop"
+            android:visibility="gone"
+            app:layout_constraintTop_toBottomOf="@id/textViewContent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            tools:visibility="visible"
+            tools:src="@drawable/ic_launcher_foreground"/>
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/buttonAttach"
+            style="@style/Widget.Material3.Button.TextButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/spacing_8"
+            android:text="@string/attach"
+            app:layout_constraintTop_toBottomOf="@id/imageViewAttachment"
+            app:layout_constraintStart_toStartOf="parent"/>
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/buttonRemoveAttachment"
+            style="@style/Widget.Material3.Button.TextButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/spacing_8"
+            android:text="@string/delete"
+            android:visibility="gone"
+            app:layout_constraintTop_toBottomOf="@id/imageViewAttachment"
+            app:layout_constraintEnd_toEndOf="parent"/>
+
     </androidx.constraintlayout.widget.ConstraintLayout>
 
 </com.google.android.material.card.MaterialCardView> 

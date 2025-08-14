@@ -61,51 +61,6 @@ class AuthRepositoryImpl @Inject constructor(
         }
     }
 
-//    override fun signInWithEmailAndPassword(email: String, password: String): Flow<AuthResult> = callbackFlow {
-//        trySend(AuthResult.Loading)
-//
-//        val task = firebaseAuth.signInWithEmailAndPassword(email, password)
-//        task.addOnCompleteListener { taskResult ->
-//            if (taskResult.isSuccessful) {
-//                val user = taskResult.result?.user
-//                if (user != null) {
-//                    trySend(AuthResult.Success(user.toUserDto().toDomain()))
-//                } else {
-//                    trySend(AuthResult.Error("Sign in failed"))
-//                }
-//            } else {
-//                val error = taskResult.exception?.message ?: "Sign in failed"
-//                Timber.e(taskResult.exception, "Sign in error")
-//                trySend(AuthResult.Error(error))
-//            }
-//            close()
-//        }
-//
-//        awaitClose { /* no active listener to remove in this case */ }
-//    }
-
-//    override fun signInWithEmailAndPassword(email: String, password: String): Flow<AuthResult> = callbackFlow {
-//        trySend(AuthResult.Loading)
-//
-//        val task = firebaseAuth.signInWithEmailAndPassword(email, password)
-//        task.addOnSuccessListener { result ->
-//            val user = result.user
-//            if (user != null) {
-//                trySend(AuthResult.Success(user.toUserDto().toDomain()))
-//            } else {
-//                trySend(AuthResult.Error("Sign in failed"))
-//            }
-//            close()
-//        }.addOnFailureListener { exception ->
-//            Timber.e(exception, "Sign in error")
-//            trySend(AuthResult.Error(exception.message ?: "Sign in failed"))
-//            close()
-//        }
-//
-//        awaitClose {  }
-//    }
-
-
     override fun signUpWithEmailAndPassword(email: String, password: String): Flow<AuthResult> = flow {
         emit(AuthResult.Loading)
         try {
@@ -287,8 +242,8 @@ class AuthRepositoryImpl @Inject constructor(
             Timber.d("Test phone number detected")
             firebaseAuth.firebaseAuthSettings.apply {
                 setAppVerificationDisabledForTesting(true)
-                //forceRecaptchaFlowForTesting(true)
-                //setAutoRetrievedSmsCodeForPhoneNumber(phoneNumber, "123456")
+                forceRecaptchaFlowForTesting(false)
+                setAutoRetrievedSmsCodeForPhoneNumber(phoneNumber, "123456")
             }
             Timber.d("App verification disabled for testing")
         }
@@ -356,7 +311,7 @@ class AuthRepositoryImpl @Inject constructor(
             Timber.d("Using resend token for phone verification")
         }
             
-        PhoneAuthProvider.verifyPhoneNumber(optionsBuilder.build())
+        PhoneAuthProvider.verifyPhoneNumber(optionsBuilder.build()) // Starts verification process
         
         awaitClose { }
     }

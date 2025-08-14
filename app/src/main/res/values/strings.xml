@@ -24,7 +24,7 @@
     <string name="verification_email_sent">Verification email sent. Please check your inbox.</string>
     <string name="email_verified">Your email is verified.</string>
     <string name="check_verification">Check Verification</string>
-    
+
     <!-- Phone Authentication -->
     <string name="phone_number">Phone Number</string>
     <string name="enter_phone_number">Enter your phone number</string>
@@ -37,13 +37,13 @@
     <string name="use_email">Use email</string>
     <string name="use_phone">Use phone number</string>
     <string name="please_enter_phone_number">Please enter your phone number</string>
-    <string name="please_enter_verification_code">Please enter the verification code</string>
+    <string name="please_enter_verification_code">Please enter your verification code</string>
     <string name="invalid_phone_number">Please enter a valid phone number</string>
     <string name="phone_verification_failed">Phone verification failed</string>
     <string name="invalid_verification_code">Invalid verification code</string>
     <string name="verification_code_sent">Verification code sent to your phone</string>
     <string name="phone_format_hint">+90 555 123 45 67</string>
-    
+
     <!-- Password Change -->
     <string name="change_password">Change Password</string>
     <string name="current_password">Current Password</string>
@@ -53,7 +53,7 @@
     <string name="please_enter_new_password">Please enter your new password</string>
     <string name="new_password_too_short">New password must be at least 6 characters</string>
     <string name="new_password_same_as_current">New password must be different from current password</string>
-    
+
     <!-- Notes -->
     <string name="my_notes">My Notes</string>
     <string name="add_note">Add Note</string>
@@ -63,12 +63,12 @@
     <string name="note_content">Content</string>
     <string name="no_notes_yet">No notes yet. Tap + to add your first note.</string>
     <string name="title_cannot_be_empty">Title cannot be empty</string>
-    <string name="delete_note_confirmation">Are you sure you want to delete "%s"?</string>
-    <string name="add">Add</string>
+    <string name="delete_note_confirmation">Are you sure you want to delete \"%s\"?</string>
+    <string name="attach">Attach</string>
     <string name="update">Update</string>
     <string name="delete">Delete</string>
     <string name="cancel">Cancel</string>
-    
+
     <!-- Selection Mode -->
     <string name="select_notes">Select Notes</string>
     <string name="select_all">Select All</string>
@@ -77,18 +77,29 @@
     <string name="selected_count">%d selected</string>
     <string name="delete_selected_confirmation">Are you sure you want to delete %d selected note(s)?</string>
     <string name="delete_all_confirmation">Are you sure you want to delete all notes? This action cannot be undone.</string>
-    
+
     <!-- Splash Screen -->
     <string name="force_update_title">Update Required</string>
     <string name="force_update_message">A new version of the app is required. Please update to continue using the app.</string>
     <string name="maintenance_mode_title">Maintenance Mode</string>
     <string name="maintenance_mode_message">The app is currently under maintenance. Please try again later.</string>
     <string name="ok">OK</string>
-    
+
     <!-- Account Deletion -->
     <string name="delete_account">Delete Account</string>
     <string name="delete_account_title">Delete Account</string>
-    <string name="delete_account_message">Are you sure you want to delete your account? \nEnter your password:</string>
-    <string name="delete_google_account_message">Are you sure you want to delete your account? \n\nThis action cannot be undone and will permanently delete all your data.</string>
+    <string name="delete_account_message">Are you sure you want to delete your account?\nEnter your password:</string>
+    <string name="delete_google_account_message">Are you sure you want to delete your account?\n\nThis action cannot be undone and will permanently delete all your data.</string>
 
+    <!-- Storage / Profile -->
+    <string name="content_desc_profile_image">Profile image</string>
+    <string name="content_desc_edit_profile_image">Edit profile image</string>
+    <string name="profile_photo_updated">Profile photo updated</string>
+    <string name="profile_photo_deleted">Profile photo deleted</string>
+    <string name="profile_photo_update_failed">Failed to update profile photo</string>
+
+    <!-- Storage / Notes Attachments -->
+    <string name="attachment_uploading">Uploading attachment...</string>
+    <string name="attachment_removed">Attachment removed</string>
+    <string name="attachment_upload_failed">Failed to upload attachment</string>
 </resources>

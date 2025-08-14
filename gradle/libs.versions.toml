@@ -1,5 +1,6 @@
 [versions]
 agp = "8.10.1"
+coilVersion = "2.7.0"
 kotlin = "2.0.21"
 googleGmsGoogleServices = "4.4.3"
 googleFirebaseCrashlytics = "3.0.5"
@@ -13,10 +14,13 @@ junit = "4.13.2"
 junitVersion = "1.2.1"
 espressoCore = "3.6.1"
 splash = "1.0.1"
+firebaseAnalytics = "23.0.0"
+playServicesMeasurementApi = "23.0.0"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version = "1.16.0" }
 androidx-appcompat = { group = "androidx.appcompat", name = "appcompat", version = "1.7.1" }
+coil = { module = "io.coil-kt:coil", version.ref = "coilVersion" }
 material = { group = "com.google.android.material", name = "material", version = "1.12.0" }
 androidx-activity = { group = "androidx.activity", name = "activity", version = "1.10.1" }
 androidx-constraintlayout = { group = "androidx.constraintlayout", name = "constraintlayout", version = "2.2.1" }
@@ -45,6 +49,8 @@ junit = { group = "junit", name = "junit", version.ref = "junit" }
 androidx-junit = { group = "androidx.test.ext", name = "junit", version.ref = "junitVersion" }
 androidx-espresso-core = { group = "androidx.test.espresso", name = "espresso-core", version.ref = "espressoCore" }
 core-splashscreen = { group = "androidx.core", name="core-splashscreen", version.ref="splash"}
+firebase-analytics = { group = "com.google.firebase", name = "firebase-analytics", version.ref = "firebaseAnalytics" }
+play-services-measurement-api = { group = "com.google.android.gms", name = "play-services-measurement-api", version.ref = "playServicesMeasurementApi" }
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
 kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }

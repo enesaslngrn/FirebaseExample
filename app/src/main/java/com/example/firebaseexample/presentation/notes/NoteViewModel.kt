@@ -1,14 +1,17 @@
 package com.example.firebaseexample.presentation.notes
 
+import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.firebaseexample.domain.models.Note
 import com.example.firebaseexample.domain.usecases.AddNoteUseCase
 import com.example.firebaseexample.domain.usecases.DeleteAllNotesUseCase
+import com.example.firebaseexample.domain.usecases.DeleteNoteAttachmentUseCase
 import com.example.firebaseexample.domain.usecases.DeleteNoteUseCase
 import com.example.firebaseexample.domain.usecases.DeleteSelectedNotesUseCase
 import com.example.firebaseexample.domain.usecases.GetNotesUseCase
 import com.example.firebaseexample.domain.usecases.UpdateNoteUseCase
+import com.example.firebaseexample.domain.usecases.UploadNoteAttachmentUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -25,7 +28,9 @@ class NoteViewModel @Inject constructor(
     private val updateNoteUseCase: UpdateNoteUseCase,
     private val deleteNoteUseCase: DeleteNoteUseCase,
     private val deleteAllNotesUseCase: DeleteAllNotesUseCase,
-    private val deleteSelectedNotesUseCase: DeleteSelectedNotesUseCase
+    private val deleteSelectedNotesUseCase: DeleteSelectedNotesUseCase,
+    private val uploadNoteAttachmentUseCase: UploadNoteAttachmentUseCase,
+    private val deleteNoteAttachmentUseCase: DeleteNoteAttachmentUseCase
 ) : ViewModel() {
 
     private val _state: MutableStateFlow<NoteState> = MutableStateFlow(NoteState())
@@ -54,32 +59,33 @@ class NoteViewModel @Inject constructor(
             is NoteEvent.ExitSelectionMode -> exitSelectionMode()
             is NoteEvent.ClearError -> clearError()
             is NoteEvent.ClearSuccessMessage -> clearSuccessMessage()
+            is NoteEvent.UploadAttachment -> uploadAttachment(event.note, event.fileUri)
+            is NoteEvent.DeleteAttachment -> deleteAttachment(event.note)
         }
     }
 
     private fun loadNotes() {
         val uid: String = userId ?: return
         _state.update { it.copy(isLoading = true) }
-        
         viewModelScope.launch {
             try {
                 getNotesUseCase(uid).collect { notes ->
-                    _state.update { 
+                    _state.update {
                         it.copy(
                             notes = notes,
                             isLoading = false,
                             isInitialized = true
-                        ) 
+                        )
                     }
                 }
             } catch (e: Exception) {
                 Timber.e(e, "Error loading notes")
-                _state.update { 
+                _state.update {
                     it.copy(
                         error = "Failed to load notes",
                         isLoading = false,
                         isInitialized = true
-                    ) 
+                    )
                 }
             }
         }
@@ -91,32 +97,29 @@ class NoteViewModel @Inject constructor(
             _state.update { it.copy(error = "Title cannot be empty") }
             return
         }
-        
         _state.update { it.copy(isLoading = true) }
-        
         val note = Note(
             id = "",
             title = title,
             content = content,
             timestamp = System.currentTimeMillis()
         )
-        
         viewModelScope.launch {
             addNoteUseCase(uid, note).collect { result ->
                 result.onSuccess {
-                    _state.update { 
+                    _state.update {
                         it.copy(
                             isLoading = false,
                             successMessage = "Note added successfully"
-                        ) 
+                        )
                     }
                 }.onFailure { exception ->
                     Timber.e(exception, "Error adding note")
-                    _state.update { 
+                    _state.update {
                         it.copy(
                             error = "Failed to add note",
                             isLoading = false
-                        ) 
+                        )
                     }
                 }
             }
@@ -125,30 +128,23 @@ class NoteViewModel @Inject constructor(
 
     private fun updateNote(note: Note) {
         val uid: String = userId ?: return
-        if (note.title.isBlank()) {
-            _state.update { it.copy(error = "Title cannot be empty") }
-            return
-        }
-        
         _state.update { it.copy(isLoading = true) }
-        
         viewModelScope.launch {
             updateNoteUseCase(uid, note).collect { result ->
                 result.onSuccess {
-                    _state.update { 
+                    _state.update {
                         it.copy(
                             isLoading = false,
-                            successMessage = "Note updated successfully",
-                            selectedNote = null
-                        ) 
+                            successMessage = "Note updated successfully"
+                        )
                     }
                 }.onFailure { exception ->
                     Timber.e(exception, "Error updating note")
-                    _state.update { 
+                    _state.update {
                         it.copy(
                             error = "Failed to update note",
                             isLoading = false
-                        ) 
+                        )
                     }
                 }
             }
@@ -158,23 +154,22 @@ class NoteViewModel @Inject constructor(
     private fun deleteNote(noteId: String) {
         val uid: String = userId ?: return
         _state.update { it.copy(isLoading = true) }
-        
         viewModelScope.launch {
             deleteNoteUseCase(uid, noteId).collect { result ->
                 result.onSuccess {
-                    _state.update { 
+                    _state.update {
                         it.copy(
                             isLoading = false,
                             successMessage = "Note deleted successfully"
-                        ) 
+                        )
                     }
                 }.onFailure { exception ->
                     Timber.e(exception, "Error deleting note")
-                    _state.update { 
+                    _state.update {
                         it.copy(
                             error = "Failed to delete note",
                             isLoading = false
-                        ) 
+                        )
                     }
                 }
             }
@@ -184,26 +179,22 @@ class NoteViewModel @Inject constructor(
     private fun deleteAllNotes() {
         val uid: String = userId ?: return
         _state.update { it.copy(isLoading = true) }
-        
         viewModelScope.launch {
             deleteAllNotesUseCase(uid).collect { result ->
                 result.onSuccess {
-                    _state.update { 
+                    _state.update {
                         it.copy(
                             isLoading = false,
-                            selectedNotes = emptyList(),
-                            isSelectionMode = false,
                             successMessage = "All notes deleted successfully"
-                        ) 
+                        )
                     }
-                    Timber.d("Successfully deleted all notes")
                 }.onFailure { exception ->
                     Timber.e(exception, "Error deleting all notes")
-                    _state.update { 
+                    _state.update {
                         it.copy(
                             error = "Failed to delete all notes",
                             isLoading = false
-                        ) 
+                        )
                     }
                 }
             }
@@ -212,60 +203,52 @@ class NoteViewModel @Inject constructor(
 
     private fun deleteSelectedNotes(noteIds: List<String>) {
         val uid: String = userId ?: return
-        
-        if (noteIds.isEmpty()) {
-            Timber.w("No notes selected for deletion")
-            return
-        }
-        
+        if (noteIds.isEmpty()) return
         _state.update { it.copy(isLoading = true) }
-        
         viewModelScope.launch {
             deleteSelectedNotesUseCase(uid, noteIds).collect { result ->
                 result.onSuccess {
-                    val deletedCount = noteIds.size
-                    _state.update { 
+                    _state.update {
                         it.copy(
                             isLoading = false,
-                            selectedNotes = emptyList(),
-                            isSelectionMode = false,
-                            successMessage = if (deletedCount == 1) {
-                                "Note deleted successfully"
-                            } else {
-                                "$deletedCount notes deleted successfully"
-                            }
-                        ) 
+                            successMessage = "Selected notes deleted successfully"
+                        )
                     }
-                    Timber.d("Successfully deleted $deletedCount selected notes")
                 }.onFailure { exception ->
                     Timber.e(exception, "Error deleting selected notes")
-                    _state.update { 
+                    _state.update {
                         it.copy(
                             error = "Failed to delete selected notes",
                             isLoading = false
-                        ) 
+                        )
                     }
                 }
             }
         }
     }
 
+    private fun selectNote(note: Note) {
+        _state.update { it.copy(selectedNote = note) }
+    }
+
     private fun toggleNoteSelection(note: Note) {
         _state.update { currentState ->
-            val currentlySelected = currentState.selectedNotes
-            val isAlreadySelected = currentlySelected.any { it.id == note.id }
-            
-            val newSelectedNotes = if (isAlreadySelected) {
-                currentlySelected.filter { it.id != note.id }
+            val isSelected = currentState.selectedNotes.contains(note)
+            val updatedSelection = if (isSelected) {
+                currentState.selectedNotes - note
             } else {
-                currentlySelected + note
+                currentState.selectedNotes + note
             }
-            
-            currentState.copy(
-                selectedNotes = newSelectedNotes,
-                isSelectionMode = newSelectedNotes.isNotEmpty()
-            )
+            currentState.copy(selectedNotes = updatedSelection)
         }
+    }
+
+    private fun clearSelectedNote() {
+        _state.update { it.copy(selectedNote = null) }
+    }
+
+    private fun clearSelectedNotes() {
+        _state.update { it.copy(selectedNotes = emptyList()) }
     }
 
     private fun enterSelectionMode() {
@@ -273,24 +256,7 @@ class NoteViewModel @Inject constructor(
     }
 
     private fun exitSelectionMode() {
-        _state.update { 
-            it.copy(
-                isSelectionMode = false,
-                selectedNotes = emptyList()
-            ) 
-        }
-    }
-
-    private fun clearSelectedNotes() {
-        _state.update { it.copy(selectedNotes = emptyList()) }
-    }
-
-    private fun selectNote(note: Note) {
-        _state.update { it.copy(selectedNote = note) }
-    }
-
-    private fun clearSelectedNote() {
-        _state.update { it.copy(selectedNote = null) }
+        _state.update { it.copy(isSelectionMode = false, selectedNotes = emptyList()) }
     }
 
     private fun clearError() {
@@ -299,5 +265,39 @@ class NoteViewModel @Inject constructor(
 
     private fun clearSuccessMessage() {
         _state.update { it.copy(successMessage = null) }
+    }
+
+    private fun uploadAttachment(note: Note, fileUri: Uri) {
+        val uid: String = userId ?: return
+        _state.update { it.copy(attachmentUploadingNoteId = note.id) }
+        viewModelScope.launch {
+            uploadNoteAttachmentUseCase(uid, note.id, fileUri).collect { result ->
+                result.onSuccess { url ->
+                    val updated = note.copy(attachmentUrl = url, updatedAt = System.currentTimeMillis())
+                    updateNote(updated)
+                    _state.update { it.copy(attachmentUploadingNoteId = null) }
+                }.onFailure { e ->
+                    Timber.e(e, "Failed to upload attachment")
+                    _state.update { it.copy(attachmentUploadingNoteId = null, error = "Failed to upload attachment") }
+                }
+            }
+        }
+    }
+
+    private fun deleteAttachment(note: Note) {
+        val uid: String = userId ?: return
+        _state.update { it.copy(attachmentUploadingNoteId = note.id) }
+        viewModelScope.launch {
+            deleteNoteAttachmentUseCase(uid, note.id).collect { result ->
+                result.onSuccess {
+                    val cleared = note.copy(attachmentUrl = null, updatedAt = System.currentTimeMillis())
+                    updateNote(cleared)
+                    _state.update { it.copy(attachmentUploadingNoteId = null, successMessage = "Attachment removed") }
+                }.onFailure { e ->
+                    Timber.e(e, "Failed to remove attachment from storage")
+                    _state.update { it.copy(attachmentUploadingNoteId = null, error = "Failed to remove attachment") }
+                }
+            }
+        }
     }
 } 

@@ -58,6 +58,8 @@ dependencies {
     implementation(libs.firebase.storage)
     implementation(libs.firebase.crashlytics)
     implementation(libs.firebase.config)
+    implementation(libs.firebase.analytics)
+    implementation(libs.play.services.measurement.api)
 
     // Splash Api
     implementation(libs.core.splashscreen)
@@ -85,6 +87,9 @@ dependencies {
 
     // Timber for logging
     implementation(libs.timber)
+
+    // Coil for image loading
+    implementation(libs.coil)
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)

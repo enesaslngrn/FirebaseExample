@@ -10,5 +10,6 @@ data class NoteState(
     val isLoading: Boolean = false,
     val error: String? = null,
     val successMessage: String? = null,
-    val isInitialized: Boolean = false
+    val isInitialized: Boolean = false,
+    val attachmentUploadingNoteId: String? = null
 ) 

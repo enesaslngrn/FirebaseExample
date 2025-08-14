@@ -13,6 +13,7 @@ import com.example.firebaseexample.presentation.auth.AuthViewModel
 import com.example.firebaseexample.presentation.home.HomeFragment
 import com.example.firebaseexample.presentation.splash.SplashViewModel
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
+import com.google.firebase.analytics.FirebaseAnalytics
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
@@ -24,7 +25,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var binding: ActivityMainBinding
     private val authViewModel: AuthViewModel by viewModels()
     private val splashViewModel: SplashViewModel by viewModels()
-
+    private lateinit var firebaseAnalytics: FirebaseAnalytics
     override fun onCreate(savedInstanceState: Bundle?) {
         val splashScreen = installSplashScreen()
         super.onCreate(savedInstanceState)
@@ -34,6 +35,7 @@ class MainActivity : AppCompatActivity() {
 
         setupSplashScreen(splashScreen)
         observeSplashState()
+        firebaseAnalytics = FirebaseAnalytics.getInstance(this)
     }
 
     private fun setupSplashScreen(splashScreen: androidx.core.splashscreen.SplashScreen) {
@@ -103,6 +105,7 @@ class MainActivity : AppCompatActivity() {
             .setMessage(getString(R.string.force_update_message))
             .setPositiveButton(getString(R.string.ok)) { _, _ ->
                 finishAffinity()
+                firebaseAnalytics.logEvent("force_update_dialog_clicked", null)
             }
             .setCancelable(false)
             .show()
@@ -114,6 +117,9 @@ class MainActivity : AppCompatActivity() {
             .setMessage(getString(R.string.maintenance_mode_message))
             .setPositiveButton(getString(R.string.ok)) { _, _ ->
                 finishAffinity()
+                firebaseAnalytics.logEvent("maintenance_mode_dialog_clicked", Bundle().apply {
+                    putString("maintenance_mode", "true")
+                })
             }
             .setCancelable(false)
             .show()

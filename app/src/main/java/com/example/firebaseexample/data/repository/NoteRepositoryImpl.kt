@@ -18,10 +18,6 @@ class NoteRepositoryImpl @Inject constructor(
 ) : NoteRepository {
     override fun getNotes(userId: String): Flow<List<Note>> = callbackFlow {
         val ref = firestore.collection("users").document(userId).collection("notes")
-            //.whereEqualTo("title", "title1")
-            //.whereNotEqualTo("updatedAt", null)
-            //.whereLessThan("timestamp", System.currentTimeMillis() - (30 * 1000)) // 30 saniye önce
-            //.limit(3)
             .orderBy("timestamp", Query.Direction.DESCENDING)
         val listener = ref.addSnapshotListener { snapshot, _ ->
             snapshot?.let {
