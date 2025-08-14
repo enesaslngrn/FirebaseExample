@@ -9,7 +9,9 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.view.isVisible
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import coil.load
 import coil.transform.CircleCropTransformation
 import com.example.firebaseexample.R
@@ -38,7 +40,7 @@ class HomeFragment : Fragment() {
         ActivityResultContracts.GetContent()
     ) { uri: Uri? ->
         val userId: String = authViewModel.state.value.user?.id ?: return@registerForActivityResult
-        if (uri != null) {
+        uri?.let {
             authViewModel.onEvent(AuthEvent.UploadProfilePhoto(userId, uri))
         }
     }
@@ -192,9 +194,11 @@ class HomeFragment : Fragment() {
 
     private fun observeAuthState() {
         viewLifecycleOwner.lifecycleScope.launch {
-            authViewModel.state.collect { state ->
-                updateUI(state)
-                handleAccountDeletion(state)
+            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                authViewModel.state.collect { state ->
+                    updateUI(state)
+                    handleAccountDeletion(state)
+                }
             }
         }
     }
