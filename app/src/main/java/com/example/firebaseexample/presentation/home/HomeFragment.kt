@@ -234,8 +234,7 @@ class HomeFragment : Fragment() {
                 binding.verifiedTextView.isVisible = it
                 binding.sendVerificationButton.isVisible = !it
             }
-            
-            // Hide change password button for Google users
+
             binding.changePasswordButton.isVisible = user.isEmailPasswordUser()
             
             Timber.d("User info displayed: ${user.email}")

@@ -4,7 +4,7 @@ import com.example.firebaseexample.domain.models.User
 
 data class UserDto(
     val id: String,
-    val email: String,
+    val email: String?,
     val displayName: String?,
     val photoUrl: String?,
     val isEmailVerified: Boolean?,

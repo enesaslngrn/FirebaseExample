@@ -338,9 +338,9 @@ class AuthRepositoryImpl @Inject constructor(
     private fun FirebaseUser.toUserDto(): UserDto {
         return UserDto(
             id = uid,
-            email = email ?: "",
+            email = email,
             displayName = displayName,
-            photoUrl = photoUrl?.toString(),
+            photoUrl = photoUrl.toString(),
             isEmailVerified = isEmailVerified,
             providers = providerData.map { it.providerId }
         )
