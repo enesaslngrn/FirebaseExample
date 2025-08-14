@@ -23,7 +23,6 @@ import com.example.firebaseexample.presentation.notes.NotesFragment
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.snackbar.Snackbar
 import dagger.hilt.android.AndroidEntryPoint
-import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import timber.log.Timber
 
@@ -193,7 +192,7 @@ class HomeFragment : Fragment() {
 
     private fun observeAuthState() {
         viewLifecycleOwner.lifecycleScope.launch {
-            authViewModel.state.collectLatest { state ->
+            authViewModel.state.collect { state ->
                 updateUI(state)
                 handleAccountDeletion(state)
             }

@@ -511,6 +511,7 @@ class AuthViewModel @Inject constructor(
                         _state.update { 
                             it.copy(
                                 isLoading = false,
+                                user = result.user,
                                 successMessage = "Profile photo updated successfully"
                             ) 
                         }
@@ -541,6 +542,7 @@ class AuthViewModel @Inject constructor(
                         _state.update { 
                             it.copy(
                                 isLoading = false,
+                                user = result.user,
                                 successMessage = "Profile photo deleted successfully"
                             ) 
                         }
