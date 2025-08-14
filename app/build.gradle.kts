@@ -58,13 +58,14 @@ dependencies {
     implementation(libs.firebase.storage)
     implementation(libs.firebase.crashlytics)
     implementation(libs.firebase.config)
+    implementation(libs.firebase.analytics)
+    implementation(libs.play.services.measurement.api)
 
     // Splash Api
     implementation(libs.core.splashscreen)
 
     // Hilt
     implementation(libs.hilt.android)
-    implementation(libs.firebase.analytics)
     kapt(libs.hilt.compiler)
 
     // Navigation Component
