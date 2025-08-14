@@ -79,12 +79,11 @@ class NotesFragment : Fragment() {
     }
 
     private fun setupToolbars() {
-        // Normal toolbar menu
+
         binding.toolbar.setOnMenuItemClickListener { menuItem ->
             handleToolbarMenuClick(menuItem)
         }
 
-        // Selection toolbar
         binding.toolbarSelection.setNavigationOnClickListener {
             noteViewModel.onEvent(NoteEvent.ExitSelectionMode)
         }
@@ -118,7 +117,7 @@ class NotesFragment : Fragment() {
                 true
             }
             R.id.action_select_all -> {
-                // Select all notes
+
                 state.notes.forEach { note ->
                     if (!state.selectedNotes.contains(note)) {
                         noteViewModel.onEvent(NoteEvent.ToggleNoteSelection(note))
@@ -158,7 +157,6 @@ class NotesFragment : Fragment() {
             textViewEmptyState.isVisible = state.notes.isEmpty() && state.isInitialized && !state.isLoading
             recyclerViewNotes.isVisible = state.notes.isNotEmpty()
 
-            // Selection mode UI
             toolbar.isVisible = !state.isSelectionMode
             toolbarSelection.isVisible = state.isSelectionMode
             fabAddNote.isVisible = !state.isSelectionMode
@@ -168,7 +166,6 @@ class NotesFragment : Fragment() {
             }
         }
 
-        // Update adapter
         notesAdapter.submitList(state.notes)
         notesAdapter.setSelectionMode(state.isSelectionMode)
         notesAdapter.updateSelectedNotes(state.selectedNotes)

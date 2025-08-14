@@ -168,16 +168,6 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/emailAuthSection" />
 
-    <!-- Spacer View for Phone Auth Mode -->
-    <View
-        android:id="@+id/phoneAuthSpacer"
-        android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:visibility="gone"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/phoneAuthSection" />
-
     <!-- Divider -->
     <TextView
         android:id="@+id/orDivider"

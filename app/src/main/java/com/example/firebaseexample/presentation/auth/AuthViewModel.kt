@@ -45,15 +45,13 @@ class AuthViewModel @Inject constructor(
 
     private val _state = MutableStateFlow(AuthState())
     val state: StateFlow<AuthState> = _state.asStateFlow()
-    
-    // Timer management
+
     private var timerJob: Job? = null
     private companion object {
         const val VERIFICATION_TIMEOUT_SECONDS = 30
     }
 
     init {
-        // Reload user once on app start to get fresh data from Firebase
         viewModelScope.launch {
             try {
                 reloadUserUseCase()
@@ -61,7 +59,6 @@ class AuthViewModel @Inject constructor(
             } catch (e: Exception) {
                 Timber.w(e, "Initial user reload failed, continuing with cached data")
             }
-            // After reload, start observing user changes
             observeCurrentUser()
         }
     }
@@ -80,14 +77,9 @@ class AuthViewModel @Inject constructor(
             is AuthEvent.ChangePassword -> changePassword(event.currentPassword, event.newPassword)
             // Phone Auth events
             is AuthEvent.TogglePhoneAuthMode -> togglePhoneAuthMode()
-            is AuthEvent.VerifyPhoneNumber -> verifyPhoneNumber(event.phoneNumber)
+            is AuthEvent.VerifyPhoneNumber -> verifyPhoneNumber(event.phoneNumber, event.fragmentActivity)
             is AuthEvent.VerifySmsCode -> verifySmsCode(event.smsCode)
-            is AuthEvent.ResendVerificationCode -> resendVerificationCode()
-            is AuthEvent.ClearPhoneAuthState -> clearPhoneAuthState()
-            // Timer events
-            is AuthEvent.StartTimer -> startVerificationTimer()
-            is AuthEvent.TimeoutExpired -> handleTimeoutExpired()
-            is AuthEvent.StopTimer -> stopTimer()
+            is AuthEvent.ResendVerificationCode -> resendVerificationCode(event.fragmentActivity)
         }
     }
 
@@ -118,10 +110,7 @@ class AuthViewModel @Inject constructor(
                         _state.update { it.copy(isLoading = false, error = result.message) }
                         Timber.e("Sign in error: ${result.message}")
                     }
-                    // These cases should not occur in email/password sign in
-                    is AuthResult.CodeSent -> {
-                        Timber.w("Unexpected CodeSent result in email sign in")
-                    }
+                    is AuthResult.CodeSent -> { }
                 }
             }
         }
@@ -141,10 +130,7 @@ class AuthViewModel @Inject constructor(
                         _state.update { it.copy(isLoading = false, error = result.message) }
                         Timber.e("Sign up error: ${result.message}")
                     }
-                    // These cases should not occur in email/password sign up
-                    is AuthResult.CodeSent -> {
-                        Timber.w("Unexpected CodeSent result in email sign up")
-                    }
+                    is AuthResult.CodeSent -> {}
                 }
             }
         }
@@ -164,10 +150,7 @@ class AuthViewModel @Inject constructor(
                         _state.update { it.copy(isLoading = false, error = result.message) }
                         Timber.e("Sign out error: ${result.message}")
                     }
-                    // These cases should not occur in sign out
-                    is AuthResult.CodeSent -> {
-                        Timber.w("Unexpected CodeSent result in sign out")
-                    }
+                    is AuthResult.CodeSent -> {}
                 }
             }
         }
@@ -194,10 +177,7 @@ class AuthViewModel @Inject constructor(
                         _state.update { it.copy(isLoading = false, error = result.message) }
                         Timber.e("Password reset error: ${result.message}")
                     }
-                    // These cases should not occur in password reset
-                    is AuthResult.CodeSent -> {
-                        Timber.w("Unexpected CodeSent result in password reset")
-                    }
+                    is AuthResult.CodeSent -> { }
                 }
             }
         }
@@ -211,7 +191,7 @@ class AuthViewModel @Inject constructor(
                 when (result) {
                     is AuthResult.Loading -> _state.update { it.copy(isLoading = true) }
                     is AuthResult.Success -> {
-                        _state.update { 
+                        _state.update {
                             it.copy(isLoading = false, user = result.user, error = null)
                         }
                         Timber.d("Google sign in successful: ${result.user?.email}")
@@ -220,10 +200,7 @@ class AuthViewModel @Inject constructor(
                         _state.update { it.copy(isLoading = false, error = result.message) }
                         Timber.e("Google sign in error: ${result.message}")
                     }
-                    // These cases should not occur in Google sign in
-                    is AuthResult.CodeSent -> {
-                        Timber.w("Unexpected CodeSent result in Google sign in")
-                    }
+                    is AuthResult.CodeSent -> { }
                 }
             }
         }
@@ -231,15 +208,22 @@ class AuthViewModel @Inject constructor(
 
     private fun sendEmailVerification() {
         viewModelScope.launch {
+            _state.update { it.copy(isLoading = true, error = null, successMessage = null) }
             sendEmailVerificationUseCase().collect { result ->
                 when (result) {
                     is AuthResult.Loading -> _state.update { it.copy(isLoading = true) }
-                    is AuthResult.Success -> _state.update { it.copy(isLoading = false, verificationMessage = "Verification email sent") }
-                    is AuthResult.Error -> _state.update { it.copy(isLoading = false, error = result.message) }
-                    // These cases should not occur in email verification
-                    is AuthResult.CodeSent -> {
-                        Timber.w("Unexpected CodeSent result in email verification")
+                    is AuthResult.Success ->
+                        _state.update {
+                            it.copy(
+                                isLoading = false,
+                                verificationMessage = "Verification email sent"
+                            )
+                        }
+                    is AuthResult.Error -> {
+                        _state.update { it.copy(isLoading = false, error = result.message) }
+                        Timber.e("Email verification error: ${result.message}")
                     }
+                    is AuthResult.CodeSent -> { }
                 }
             }
         }
@@ -268,10 +252,7 @@ class AuthViewModel @Inject constructor(
                         _state.update { it.copy(isLoading = false, error = result.message) }
                         Timber.e("Account deletion error: ${result.message}")
                     }
-                    // These cases should not occur in account deletion
-                    is AuthResult.CodeSent -> {
-                        Timber.w("Unexpected CodeSent result in account deletion")
-                    }
+                    is AuthResult.CodeSent -> { }
                 }
             }
         }
@@ -298,10 +279,7 @@ class AuthViewModel @Inject constructor(
                         _state.update { it.copy(isLoading = false, error = result.message) }
                         Timber.e("Password change error: ${result.message}")
                     }
-                    // These cases should not occur in password change
-                    is AuthResult.CodeSent -> {
-                        Timber.w("Unexpected CodeSent result in password change")
-                    }
+                    is AuthResult.CodeSent -> { }
                 }
             }
         }
@@ -319,7 +297,6 @@ class AuthViewModel @Inject constructor(
         }
     }
 
-    // Phone Authentication Methods
     private fun togglePhoneAuthMode() {
         _state.update { 
             it.copy(
@@ -330,20 +307,7 @@ class AuthViewModel @Inject constructor(
         }
     }
 
-    private fun verifyPhoneNumber(phoneNumber: String) {
-        // We need activity context for phone verification
-        // This will be handled in the Fragment
-        _state.update { 
-            it.copy(
-                phoneNumber = phoneNumber,
-                isLoading = true,
-                error = null,
-                successMessage = null
-            ) 
-        }
-    }
-
-    fun verifyPhoneNumberWithActivity(phoneNumber: String, activity: FragmentActivity) {
+    private fun verifyPhoneNumber(phoneNumber: String, activity: FragmentActivity) {
         viewModelScope.launch {
             _state.update { 
                 it.copy(
@@ -369,10 +333,8 @@ class AuthViewModel @Inject constructor(
                         }
                         Timber.d("SMS verification code sent")
                         Timber.d("VerificationId: ${result.verificationId}")
-                        if (phoneNumber == "+905537414070") {
-                            Timber.d("Test phone number - use code: 123456")
-                        }
-                        // Start countdown timer
+                        if (phoneNumber == "+905537414070") { Timber.d("Test phone number - use code: 123456") }
+
                         startVerificationTimer()
                     }
                     is AuthResult.Success -> {
@@ -428,30 +390,15 @@ class AuthViewModel @Inject constructor(
                         _state.update { it.copy(isVerifyingCode = false, error = result.message) }
                         Timber.e("SMS verification error: ${result.message}")
                     }
-                    else -> {
-                        // Handle other AuthResult types if needed
-                    }
+                    else -> { }
                 }
             }
         }
     }
 
-    private fun resendVerificationCode() {
-        val currentState = _state.value
-        if (currentState.phoneNumber.isEmpty() || currentState.resendToken == null) {
-            _state.update { it.copy(error = "Cannot resend code - missing phone number or token") }
-            return
-        }
-
-        // This will be called from Fragment with activity context
-        _state.update { it.copy(isLoading = true, error = null) }
-    }
-
-    fun resendVerificationCodeWithActivity(activity: FragmentActivity) {
+    private fun resendVerificationCode(activity: FragmentActivity) {
         val currentState = _state.value
         viewModelScope.launch {
-            // Reset timer and expired state
-            stopTimer()
             _state.update { 
                 it.copy(
                     isCodeExpired = false,
@@ -473,7 +420,6 @@ class AuthViewModel @Inject constructor(
                                 )
                             }
                             Timber.d("SMS verification code resent")
-                            // Start new timer
                             startVerificationTimer()
                         }
                         is AuthResult.Success -> {
@@ -500,28 +446,8 @@ class AuthViewModel @Inject constructor(
         }
     }
 
-    private fun clearPhoneAuthState() {
-        stopTimer() // Stop any active timer
-        _state.update { 
-            it.copy(
-                isPhoneAuthMode = false,
-                phoneNumber = "",
-                verificationId = "",
-                resendToken = null,
-                isCodeSent = false,
-                isVerifyingCode = false,
-                remainingTime = 0,
-                isTimerActive = false,
-                isCodeExpired = false,
-                error = null,
-                successMessage = null
-            ) 
-        }
-    }
-
-    // Timer methods
     private fun startVerificationTimer() {
-        timerJob?.cancel() // Cancel any existing timer
+        timerJob?.cancel()
         timerJob = viewModelScope.launch {
             var remainingSeconds = VERIFICATION_TIMEOUT_SECONDS
             _state.update { 
@@ -537,15 +463,7 @@ class AuthViewModel @Inject constructor(
                 remainingSeconds--
                 _state.update { it.copy(remainingTime = remainingSeconds) }
             }
-            
-            // Timer expired
-            _state.update { 
-                it.copy(
-                    remainingTime = 0,
-                    isTimerActive = false,
-                    isCodeExpired = true
-                )
-            }
+
             handleTimeoutExpired()
         }
     }
@@ -553,6 +471,7 @@ class AuthViewModel @Inject constructor(
     private fun handleTimeoutExpired() {
         _state.update { 
             it.copy(
+                remainingTime = 0,
                 error = "Verification code expired. Please request a new code.",
                 isCodeExpired = true,
                 isTimerActive = false

@@ -23,6 +23,8 @@ import androidx.credentials.CustomCredential
 import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
 import com.google.android.libraries.identity.googleid.GetGoogleIdOption
 import androidx.core.content.ContextCompat
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.repeatOnLifecycle
 
 @AndroidEntryPoint
 class AuthFragment : Fragment() {
@@ -84,7 +86,6 @@ class AuthFragment : Fragment() {
             launchGoogleSignIn()
         }
 
-        // Phone Auth UI Setup
         binding.toggleAuthModeButton.setOnClickListener {
             viewModel.onEvent(AuthEvent.TogglePhoneAuthMode)
         }
@@ -93,21 +94,18 @@ class AuthFragment : Fragment() {
             val phoneNumber = binding.phoneEditText.text.toString().trim()
             if (validatePhoneNumber(phoneNumber)) {
                 Timber.d("Attempting to verify phone number: $phoneNumber")
-                
-                // Log for debugging Firebase test numbers
                 if (phoneNumber == "+905537414070") {
                     Timber.d("Using Firebase test phone number - manual OTP flow will be used")
                     Timber.d("Expected verification code: 123456")
                 }
                 
-                viewModel.verifyPhoneNumberWithActivity(phoneNumber, requireActivity())
+                viewModel.onEvent(AuthEvent.VerifyPhoneNumber(phoneNumber, requireActivity()))
             }
         }
 
         binding.verifyCodeButton.setOnClickListener {
             val verificationCode = binding.verificationCodeEditText.text.toString().trim()
-            
-            // Check if code is expired
+
             if (viewModel.state.value.isCodeExpired) {
                 showError("Verification code has expired. Please request a new code.")
                 return@setOnClickListener
@@ -119,7 +117,7 @@ class AuthFragment : Fragment() {
         }
 
         binding.resendCodeButton.setOnClickListener {
-            viewModel.resendVerificationCodeWithActivity(requireActivity())
+            viewModel.onEvent(AuthEvent.ResendVerificationCode(requireActivity()))
         }
     }
 
@@ -128,7 +126,7 @@ class AuthFragment : Fragment() {
             try {
                 val googleIdOption = GetGoogleIdOption.Builder()
                     .setServerClientId(getString(R.string.default_web_client_id))
-                    .setFilterByAuthorizedAccounts(false)
+                    .setFilterByAuthorizedAccounts(true)
                     .setAutoSelectEnabled(true)
                     .build()
 
@@ -205,23 +203,18 @@ class AuthFragment : Fragment() {
             showError(getString(R.string.please_enter_phone_number))
             return false
         }
-        
-        // Check if it starts with + and has reasonable length
+
         if (!phoneNumber.startsWith("+")) {
             showError(getString(R.string.invalid_phone_number))
             return false
         }
-        
-        // Remove + and spaces for length check
+
         val digitsOnly = phoneNumber.replace("+", "").replace(" ", "").replace("-", "")
-        
-        // Phone number should have at least 10 digits (excluding country code)
         if (digitsOnly.length < 10 || digitsOnly.length > 15) {
             showError(getString(R.string.invalid_phone_number))
             return false
         }
-        
-        // Check if all characters after + are digits, spaces, or hyphens
+
         if (!phoneNumber.substring(1).matches(Regex("[0-9\\s-]+"))) {
             showError(getString(R.string.invalid_phone_number))
             return false
@@ -240,14 +233,16 @@ class AuthFragment : Fragment() {
             showError(getString(R.string.invalid_verification_code))
             return false
         }
-        
+
         return true
     }
 
     private fun observeState() {
         viewLifecycleOwner.lifecycleScope.launch {
-            viewModel.state.collectLatest { state ->
-                updateUI(state)
+            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                viewModel.state.collectLatest { state ->
+                    updateUI(state)
+                }
             }
         }
     }
@@ -255,30 +250,20 @@ class AuthFragment : Fragment() {
     @SuppressLint("DefaultLocale")
     private fun updateUI(state: AuthState) {
         binding.progressIndicator.visibility = if (state.isLoading || state.isVerifyingCode) View.VISIBLE else View.GONE
-        
-        // Toggle between email and phone auth modes with proper constraint management
+
         if (state.isPhoneAuthMode) {
-            // Show phone auth, hide email auth
             binding.emailAuthSection.visibility = View.GONE
             binding.phoneAuthSection.visibility = View.VISIBLE
-            binding.phoneAuthSpacer.visibility = View.VISIBLE
-            
-            // Update toggle button constraint to phoneAuthSpacer
-            val toggleParams = binding.toggleAuthModeButton.layoutParams as androidx.constraintlayout.widget.ConstraintLayout.LayoutParams
-            toggleParams.topToBottom = binding.phoneAuthSpacer.id
-            binding.toggleAuthModeButton.layoutParams = toggleParams
-            
-            // Hide Google sign in and divider in phone mode
+            binding.toggleAuthModeButton.visibility = View.GONE
+
             binding.googleSignInButton.visibility = View.GONE
             binding.orDivider.visibility = View.GONE
-            
-            // Phone auth UI state management
+
             binding.verificationCodeLayout.visibility = if (state.isCodeSent) View.VISIBLE else View.GONE
             binding.verifyCodeButton.visibility = if (state.isCodeSent) View.VISIBLE else View.GONE
             binding.resendCodeButton.visibility = if (state.isCodeSent) View.VISIBLE else View.GONE
             binding.timerTextView.visibility = if (state.isCodeSent && state.isTimerActive) View.VISIBLE else View.GONE
-            
-            // Update timer display
+
             if (state.isTimerActive && state.remainingTime > 0) {
                 val minutes = state.remainingTime / 60
                 val seconds = state.remainingTime % 60
@@ -291,8 +276,7 @@ class AuthFragment : Fragment() {
                     }
                 )
             }
-            
-            // Phone auth button states
+
             binding.verifyPhoneButton.isEnabled = !state.isLoading && !state.isVerifyingCode && !state.isCodeSent
             binding.verifyCodeButton.isEnabled = !state.isVerifyingCode && !state.isCodeExpired
             binding.resendCodeButton.isEnabled = !state.isLoading && (state.isCodeExpired || !state.isTimerActive)
@@ -300,39 +284,22 @@ class AuthFragment : Fragment() {
             binding.verificationCodeEditText.isEnabled = !state.isVerifyingCode && !state.isCodeExpired
             
         } else {
-            // Show email auth, hide phone auth
             binding.emailAuthSection.visibility = View.VISIBLE
             binding.phoneAuthSection.visibility = View.GONE
-            binding.phoneAuthSpacer.visibility = View.GONE
-            
-            // Update toggle button constraint back to emailAuthSection
-            val toggleParams = binding.toggleAuthModeButton.layoutParams as androidx.constraintlayout.widget.ConstraintLayout.LayoutParams
-            toggleParams.topToBottom = binding.emailAuthSection.id
-            binding.toggleAuthModeButton.layoutParams = toggleParams
-            
-            // Show Google sign in and divider in email mode
+            binding.toggleAuthModeButton.visibility = View.VISIBLE
+
             binding.googleSignInButton.visibility = View.VISIBLE
             binding.orDivider.visibility = View.VISIBLE
-            
-            // Email auth button states
+
             binding.signInButton.isEnabled = !state.isLoading
             binding.signUpButton.isEnabled = !state.isLoading
             binding.forgotPasswordButton.isEnabled = !state.isLoading
             binding.emailEditText.isEnabled = !state.isLoading
             binding.passwordEditText.isEnabled = !state.isLoading
         }
-        
-        // Update toggle button text
-        binding.toggleAuthModeButton.text = if (state.isPhoneAuthMode) {
-            getString(R.string.use_email)
-        } else {
-            getString(R.string.use_phone)
-        }
-        
-        // Toggle button is always enabled unless loading
+
         binding.toggleAuthModeButton.isEnabled = !state.isLoading && !state.isVerifyingCode
 
-        // Handle messages
         state.error?.let { error ->
             showError(error)
             viewModel.onEvent(AuthEvent.ClearError)

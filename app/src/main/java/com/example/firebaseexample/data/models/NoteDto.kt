@@ -9,7 +9,15 @@ data class NoteDto(
     val timestamp: Long = 0,
     val updatedAt: Long? = null
 ) {
-    fun toDomain() = Note(id, title, content, timestamp, updatedAt)
+    fun toDomain(): Note {
+        return Note(
+            id = id,
+            title = title,
+            content = content,
+            timestamp = timestamp,
+            updatedAt = updatedAt
+        )
+    }
     companion object {
         fun fromDomain(note: Note) = NoteDto(
             id = note.id,

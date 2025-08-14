@@ -54,11 +54,9 @@ class NotesAdapter(
                 textViewContent.text = note.content
                 textViewTimestamp.text = formatTimestamp(note.timestamp)
 
-                // Selection mode visibility
                 checkBoxSelection.isVisible = isSelectionMode
                 checkBoxSelection.isChecked = selectedNotes.contains(note.id)
 
-                // Click listeners
                 if (isSelectionMode) {
                     root.setOnClickListener {
                         val isCurrentlySelected = selectedNotes.contains(note.id)
@@ -81,7 +79,6 @@ class NotesAdapter(
                     true
                 }
 
-                // Visual feedback for selected items
                 val alpha = if (isSelectionMode && selectedNotes.contains(note.id)) 0.7f else 1.0f
                 root.alpha = alpha
             }

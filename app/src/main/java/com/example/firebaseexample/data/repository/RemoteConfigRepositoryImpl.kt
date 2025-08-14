@@ -29,12 +29,11 @@ class RemoteConfigRepositoryImpl @Inject constructor(
 
     private fun setupRemoteConfig() {
         val configSettings = remoteConfigSettings {
-            minimumFetchIntervalInSeconds = 360 // 1 hour
+            minimumFetchIntervalInSeconds = 60
         }
         
         firebaseRemoteConfig.setConfigSettingsAsync(configSettings)
-        
-        // Set default values
+
         val defaultValues = mapOf(
             FORCE_UPDATE_VERSION_KEY to DEFAULT_FORCE_UPDATE_VERSION,
             MAINTENANCE_MODE_KEY to DEFAULT_MAINTENANCE_MODE
